@@ -1,10 +1,9 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Routes from './src/Routes';
-import { Text, View } from 'react-native';
-import { styles } from './src/Styles';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faHouse } from '@fortawesome/free-solid-svg-icons';
+import { View } from 'react-native';
+import Footer from './src/Components/Footer';
+import { navigationRef } from './src/Utils/NavigationRef';
 
 function App() {
   return (
@@ -18,32 +17,11 @@ function App() {
           position: 'relative',
         }}
       >
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           <Routes />
-          <View style={{ height: 65 }} />
+          <View style={{ height: 55 }} />
         </NavigationContainer>
-        <View style={styles.footer}>
-          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <FontAwesomeIcon color="white" icon={faHouse} size={20} />
-            <Text style={{ color: 'white', fontSize: 11 }}>Home</Text>
-          </View>
-          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <FontAwesomeIcon color="white" icon={faHouse} size={20} />
-            <Text style={{ color: 'white', fontSize: 11 }}>Home</Text>
-          </View>
-          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <FontAwesomeIcon color="white" icon={faHouse} size={20} />
-            <Text style={{ color: 'white', fontSize: 11 }}>Home</Text>
-          </View>
-          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <FontAwesomeIcon color="white" icon={faHouse} size={20} />
-            <Text style={{ color: 'white', fontSize: 11 }}>Home</Text>
-          </View>
-          <View style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <FontAwesomeIcon color="white" icon={faHouse} size={20} />
-            <Text style={{ color: 'white', fontSize: 11 }}>Home</Text>
-          </View>
-        </View>
+        <Footer />
       </SafeAreaView>
     </SafeAreaProvider>
   );

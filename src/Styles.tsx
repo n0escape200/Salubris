@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 export const styles = StyleSheet.create({
   page: {
     backgroundColor: 'black',
-    display: 'flex',
+    flex: 1,
     gap: 20,
   },
   container: {
@@ -21,9 +21,10 @@ export const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-evenly',
-    height: 60,
+    height: 50,
     borderColor: '#222222',
     borderWidth: 1,
+    alignItems: 'center',
   },
   textxl: {
     color: 'white',
