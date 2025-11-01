@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Text, View, ScrollView } from 'react-native';
-import { styles } from '../Styles';
+import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { LineChart } from 'react-native-chart-kit';

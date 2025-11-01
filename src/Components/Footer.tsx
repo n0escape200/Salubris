@@ -1,10 +1,10 @@
 import { Pressable, Text, View } from 'react-native';
-import { styles } from '../Styles';
-import { footerItems } from '../Constants';
+import { styles } from '../Utils/Styles';
+import { footerItems } from '../Utils/Constants';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { navigationRef } from '../Utils/NavigationRef';
 import { useEffect, useState } from 'react';
-import Vocabulary from '../Vocabulary';
+import Vocabulary from '../Utils/Vocabulary';
 
 export default function Footer() {
   const [currentRoute, setCurrentRoute] = useState<string | undefined>(
@@ -29,7 +29,7 @@ export default function Footer() {
                 currentRoute === item.label ? '#c9c9c9' : 'transparent',
               padding: 6,
               borderRadius: 5,
-              width: 60,
+              width: 62,
             }}
             key={item.label}
             onPress={() => {
@@ -46,7 +46,7 @@ export default function Footer() {
               <Text
                 style={{
                   color: currentRoute === item.label ? '#1c1c1c' : 'white',
-                  fontSize: 11,
+                  fontSize: 12,
                 }}
               >
                 {item.label}

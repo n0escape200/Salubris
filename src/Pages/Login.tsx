@@ -2,7 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import Input from '../Components/Input';
 import CustomButton from '../Components/CustomButton';
 import Divider from '../Components/Divider';
-import { styles } from '../Styles';
+import { styles } from '../Utils/Styles';
 
 export function Login() {
   return (

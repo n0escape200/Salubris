@@ -1,6 +1,8 @@
 module.exports = {
   presets: ['module:@react-native/babel-preset'],
   plugins: [
-    'react-native-reanimated/plugin', //  must be LAST in the list
+    ['@babel/plugin-proposal-decorators', { legacy: true }],
+    ['@babel/plugin-transform-class-properties', { loose: true }],
+    'react-native-reanimated/plugin', // must be LAST
   ],
 };

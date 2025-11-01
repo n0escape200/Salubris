@@ -1,5 +1,11 @@
 {
   "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": false,
+    "useDefineForClassFields": false,
+    "strictPropertyInitialization": false
+  },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["**/node_modules", "**/Pods"]
 }
