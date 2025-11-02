@@ -4,7 +4,7 @@ type CustomButtonProps = {
   label: string;
   color?: string;
   fontColor?: string;
-  innerShadow?: boolean;
+  innerShadow?: string;
   width?: number;
   onPress?: () => void;
 };
@@ -33,12 +33,12 @@ export default function CustomButton(props: CustomButtonProps) {
       <View
         style={{
           position: 'absolute',
-          top: 2,
-          left: 3,
-          right: 3,
-          bottom: 2,
-          borderRadius: 20,
-          backgroundColor: innerShadow ? 'rgba(0, 0, 0, 0.25)' : '',
+          top: 4,
+          left: 4,
+          right: 4,
+          bottom: 4,
+          borderRadius: 16,
+          backgroundColor: innerShadow ? innerShadow : '',
         }}
       />
       <Text

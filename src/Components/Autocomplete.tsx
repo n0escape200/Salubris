@@ -11,10 +11,11 @@ import { styles } from '../Utils/Styles';
 type AutocompleteProps = {
   isFocused: boolean;
   setIsFocused: React.Dispatch<React.SetStateAction<boolean>>;
+  options: Array<string>;
 };
 
 const Autocomplete = forwardRef<View, AutocompleteProps>((props, ref) => {
-  const { isFocused, setIsFocused } = props;
+  const { isFocused, setIsFocused, options } = props;
   const containerRef = useRef<View>(null);
   const inputRef = useRef<TextInput>(null);
   const [value, setValue] = useState('');
@@ -29,7 +30,7 @@ const Autocomplete = forwardRef<View, AutocompleteProps>((props, ref) => {
 
   return (
     <View
-      style={{ position: 'relative' }}
+      style={{ position: 'relative', zIndex: 1 }}
       ref={containerRef}
       collapsable={false}
     >
@@ -55,27 +56,29 @@ const Autocomplete = forwardRef<View, AutocompleteProps>((props, ref) => {
             left: 0,
             right: 0,
             backgroundColor: '#272727ff',
-            padding: 5,
-            borderColor: '#636363ff',
-            borderWidth: 1,
-            zIndex: 2,
           }}
         >
           <ScrollView>
-            <Pressable
-              onPress={() => {
-                setValue('test');
-              }}
-            >
-              <Text style={styles.textl}>test1</Text>
-              <View
-                style={{
-                  borderColor: '#636363ff',
-                  borderWidth: 1,
-                  marginVertical: 5,
-                }}
-              />
-            </Pressable>
+            {options.map(option => {
+              return (
+                <Pressable
+                  onPress={() => {
+                    setValue(option);
+                    setIsFocused(false);
+                  }}
+                  key={option}
+                >
+                  <Text
+                    style={[
+                      styles.textl,
+                      { borderColor: '#636363ff', borderWidth: 1, padding: 5 },
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
         </View>
       )}

@@ -45,7 +45,7 @@ export default function Input({
   }));
 
   return (
-    <View style={{ position: 'relative' }}>
+    <View style={{ position: 'relative', marginTop: 5 }}>
       <TextInput
         style={{
           color: 'white',

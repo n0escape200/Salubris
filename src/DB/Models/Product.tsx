@@ -2,7 +2,7 @@ import { Model } from '@nozbe/watermelondb';
 import { field, text } from '@nozbe/watermelondb/decorators';
 
 export default class Product extends Model {
-  static table = 'posts';
+  static table = 'products';
 
   @field('name') name: string;
   @field('calories') calories: number;

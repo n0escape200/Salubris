@@ -1,11 +1,19 @@
-import { faXmark } from '@fortawesome/free-solid-svg-icons';
-import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { ReactNode, RefObject } from 'react';
-import { GestureResponderEvent, Modal, Pressable, View } from 'react-native';
+import {
+  GestureResponderEvent,
+  Modal,
+  Pressable,
+  Text,
+  View,
+} from 'react-native';
+import { styles } from '../Utils/Styles';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faXmark } from '@fortawesome/free-solid-svg-icons';
 
 type CustomModalProps = {
+  title: string;
   open: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   children?: ReactNode;
   childRef?: RefObject<any>;
   onPressOutside?: () => void;

@@ -4,10 +4,10 @@ export const databaseSchema = appSchema({
   version: 1,
   tables: [
     tableSchema({
-      name: 'product',
+      name: 'products',
       columns: [
         { name: 'name', type: 'string' },
-        { name: 'calaories', type: 'number' },
+        { name: 'calories', type: 'number' },
         { name: 'protein', type: 'number' },
         { name: 'carbs', type: 'number' },
         { name: 'fats', type: 'number' },
