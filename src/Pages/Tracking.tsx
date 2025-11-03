@@ -9,24 +9,24 @@ import Input from '../Components/Input';
 import Form from '../Components/Form';
 import { database } from '../DB/Database';
 import Product from '../DB/Models/Product';
+import ProductClass from '../Utils/Classes';
 export default function Tracking() {
   const [open, setOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const autocompleteRef = useRef<any>(null);
-  const [productForm, setProdcutForm] = useState();
+  const [productForm, setProdcutForm] = useState(new ProductClass());
 
   async function createEntry() {
     try {
       await database.write(async () => {
         await database.get<Product>('products').create(product => {
-          product.name = 'Banana';
-          product.calories = 89;
-          product.protein = 1.1;
-          product.carbs = 22.8;
-          product.fats = 0.3;
+          product.name = productForm.name;
+          product.calories = productForm.calories;
+          product.protein = productForm.protein;
+          product.carbs = productForm.carbs;
+          product.fats = productForm.fats;
         });
       });
-      console.log('✅ Product added successfully!');
     } catch (error) {
       console.error('❌ Error creating product:', error);
     }
@@ -95,11 +95,36 @@ export default function Tracking() {
             ref={autocompleteRef}
             options={['test1', 'test2', 'test3', 'test4']}
           />
-          <Input label="Calories" />
-          <Input label="Calories" />
-          <Input label="Protein" />
-          <Input label="Carbs" />
-          <Input label="Fats" />
+          <Input
+            onChange={value => {
+              setProdcutForm(prev => ({ ...prev, name: value }));
+            }}
+            label="Name"
+          />
+          <Input
+            onChange={value => {
+              setProdcutForm(prev => ({ ...prev, calories: +value }));
+            }}
+            label="Calories"
+          />{' '}
+          <Input
+            onChange={value => {
+              setProdcutForm(prev => ({ ...prev, protein: +value }));
+            }}
+            label="Protein"
+          />
+          <Input
+            onChange={value => {
+              setProdcutForm(prev => ({ ...prev, carbs: +value }));
+            }}
+            label="Carbs"
+          />
+          <Input
+            onChange={value => {
+              setProdcutForm(prev => ({ ...prev, fats: +value }));
+            }}
+            label="Fats"
+          />
         </Form>
       </CustomModal>
     </View>
