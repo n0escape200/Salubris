@@ -1,4 +1,4 @@
-import { Button, Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
@@ -9,7 +9,7 @@ import Input from '../Components/Input';
 import Form from '../Components/Form';
 import { database } from '../DB/Database';
 import Product from '../DB/Models/Product';
-import ProductClass from '../Utils/Classes';
+import ProductClass from '../Utils/Models';
 export default function Tracking() {
   const [open, setOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -106,7 +106,7 @@ export default function Tracking() {
               setProdcutForm(prev => ({ ...prev, calories: +value }));
             }}
             label="Calories"
-          />{' '}
+          />
           <Input
             onChange={value => {
               setProdcutForm(prev => ({ ...prev, protein: +value }));

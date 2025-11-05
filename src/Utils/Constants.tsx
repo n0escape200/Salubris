@@ -29,3 +29,5 @@ export const footerItems = [
     icon: faUser,
   },
 ];
+
+export const notificationTypes = ['ERROR', 'SUCCESS'] as const;
