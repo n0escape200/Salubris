@@ -62,23 +62,30 @@ export default function Tracking() {
         </View>
       </View>
 
-      <Pressable
-        onPress={() => setOpen(true)}
-        style={{
-          backgroundColor: '#3a3a3aff',
-          alignSelf: 'flex-start',
-          padding: 3,
-          borderRadius: 50,
-        }}
-      >
-        <FontAwesomeIcon size={25} color="#ffffffff" icon={faPlus} />
-      </Pressable>
-
+      <View style={{ display: 'flex', flexDirection: 'row', gap: 20 }}>
+        <Pressable
+          onPress={() => setOpen(true)}
+          style={{
+            backgroundColor: '#3a3a3aff',
+            alignSelf: 'flex-start',
+            padding: 3,
+            borderRadius: 50,
+          }}
+        >
+          <FontAwesomeIcon size={25} color="#ffffffff" icon={faPlus} />
+        </Pressable>
+        <View>
+          <Text style={styles.textxl}>{new Date().toLocaleDateString()}</Text>
+        </View>
+      </View>
       <CustomModal
         title="Add product"
         open={open}
         childRef={autocompleteRef}
         onPressOutside={() => setIsFocused(false)}
+        onClose={() => {
+          setOpen(false);
+        }}
       >
         <Form
           onSubmit={() => {

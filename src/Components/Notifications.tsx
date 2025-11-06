@@ -19,11 +19,11 @@ export const Notifications = () => {
               position: 'absolute',
               left: 0,
               right: 0,
-              top: 50 + index * 100, // stacked spacing
+              top: 50 + index * 60, // stacked spacing
               marginHorizontal: 20,
               backgroundColor,
               borderRadius: 10,
-              height: 80,
+              height: 50,
               zIndex: 3,
               flexDirection: 'row',
               alignItems: 'center',

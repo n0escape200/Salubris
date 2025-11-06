@@ -4,39 +4,8 @@ import { View, Button } from 'react-native';
 import Routes from './src/Routes';
 import Footer from './src/Components/Footer';
 import { navigationRef } from './src/Utils/NavigationRef';
-import {
-  NotificationProvider,
-  useNotification,
-} from './src/Utils/NotificationContext';
-import { notificationTypes } from './src/Utils/Constants';
+import { NotificationProvider } from './src/Utils/NotificationContext';
 import { Notifications } from './src/Components/Notifications';
-
-function DemoButtons() {
-  const { addNotification } = useNotification();
-
-  return (
-    <View style={{ marginVertical: 20 }}>
-      <Button
-        title="Add Error"
-        onPress={() =>
-          addNotification({
-            type: notificationTypes[0],
-            message: 'Error occurred!',
-          })
-        }
-      />
-      <Button
-        title="Add Success"
-        onPress={() =>
-          addNotification({
-            type: notificationTypes[1],
-            message: 'Operation successful!',
-          })
-        }
-      />
-    </View>
-  );
-}
 
 function AppContent() {
   return (
@@ -44,7 +13,6 @@ function AppContent() {
       <Notifications />
       <NavigationContainer ref={navigationRef}>
         <Routes />
-        <DemoButtons />
         <View style={{ height: 55 }} />
       </NavigationContainer>
       <Footer />
