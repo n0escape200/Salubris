@@ -1,4 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import { TextInput, View } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -8,27 +13,36 @@ import Animated, {
 
 type InputProps = {
   label: string;
+  value?: string;
+  validate?: boolean;
   onChange?: (value: string) => void;
   backgroundColor?: string;
 };
 
-export default function Input({
-  label,
-  onChange,
-  backgroundColor = '#1e1e1e',
-}: InputProps) {
+export default forwardRef(function Input(
+  {
+    label,
+    value: propValue = '',
+    validate = false,
+    onChange,
+    backgroundColor = '#1e1e1e',
+  }: InputProps,
+  ref,
+) {
+  const [value, setValue] = useState(propValue);
   const [isFocused, setIsFocused] = useState(false);
-  const [value, setValue] = useState('');
+  const [isValid, setIsValid] = useState(true);
 
-  const top = useSharedValue(12); // initial position
+  const top = useSharedValue(12);
   const left = useSharedValue(12);
   const paddingHorizontal = useSharedValue(0);
 
+  useEffect(() => setValue(propValue), [propValue]);
+
   useEffect(() => {
     const isActive = isFocused || value.length > 0;
-
     top.value = withTiming(isActive ? -10 : 12, { duration: 200 });
-    left.value = withTiming(12, { duration: 200 }); // fixed left
+    left.value = withTiming(12, { duration: 200 });
     paddingHorizontal.value = withTiming(isActive ? 6 : 0, { duration: 200 });
   }, [isFocused, value]);
 
@@ -37,11 +51,17 @@ export default function Input({
     top: top.value,
     left: left.value,
     fontSize: 17,
-    color: 'white',
+    color: isValid ? 'white' : 'red',
     backgroundColor:
       isFocused || value.length > 0 ? backgroundColor : 'transparent',
     paddingHorizontal: paddingHorizontal.value,
     borderRadius: 4,
+  }));
+
+  // ✅ Expose imperative functions to parent
+  useImperativeHandle(ref, () => ({
+    setValidity: (valid: boolean) => setIsValid(valid),
+    getValue: () => value,
   }));
 
   return (
@@ -49,21 +69,23 @@ export default function Input({
       <TextInput
         style={{
           color: 'white',
-          borderColor: 'white',
+          borderColor: isValid ? 'white' : 'red',
           borderWidth: 0.5,
           borderRadius: 5,
           padding: 10,
           paddingTop: 18,
-          backgroundColor, // dynamic background
+          backgroundColor,
         }}
+        value={value}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         onChangeText={text => {
           setValue(text);
           onChange?.(text);
+          setIsValid(true);
         }}
       />
       <Animated.Text style={labelStyle}>{label}</Animated.Text>
     </View>
   );
-}
+});

@@ -78,6 +78,7 @@ export default function Tracking() {
           <Text style={styles.textxl}>{new Date().toLocaleDateString()}</Text>
         </View>
       </View>
+
       <CustomModal
         title="Add product"
         open={open}
@@ -88,9 +89,11 @@ export default function Tracking() {
         }}
       >
         <Form
-          onSubmit={() => {
-            createEntry();
-            setOpen(false);
+          onSubmit={(shouldSubmit: boolean) => {
+            if (shouldSubmit) {
+              createEntry();
+              setOpen(false);
+            }
           }}
           onCancel={() => {
             setOpen(false);
@@ -107,30 +110,35 @@ export default function Tracking() {
               setProdcutForm(prev => ({ ...prev, name: value }));
             }}
             label="Name"
+            validate
           />
           <Input
             onChange={value => {
               setProdcutForm(prev => ({ ...prev, calories: +value }));
             }}
             label="Calories"
+            validate
           />
           <Input
             onChange={value => {
               setProdcutForm(prev => ({ ...prev, protein: +value }));
             }}
             label="Protein"
+            validate
           />
           <Input
             onChange={value => {
               setProdcutForm(prev => ({ ...prev, carbs: +value }));
             }}
             label="Carbs"
+            validate
           />
           <Input
             onChange={value => {
               setProdcutForm(prev => ({ ...prev, fats: +value }));
             }}
             label="Fats"
+            validate
           />
         </Form>
       </CustomModal>
