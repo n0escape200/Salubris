@@ -28,17 +28,15 @@ export default function Form({ children, onSubmit, onCancel }: FormProps) {
   const handleValidation = () => {
     let valid = true;
 
-    childArray.forEach((child, index) => {
+    childRefs.current.forEach((ref, index) => {
+      const child = childArray[index];
       if (isValidElement(child)) {
-        const { value, validate } = child.props as {
-          value?: string | number | null;
-          validate?: boolean;
-        };
-        const ref = childRefs.current[index];
+        const { validate } = child.props as { validate?: boolean };
 
         if (validate) {
-          let isEmpty = false;
+          const value = ref.current?.getValue(); // ✅ get current input value
 
+          let isEmpty = false;
           if (value === null || value === undefined) {
             isEmpty = true;
           } else if (typeof value === 'string' && value.trim().length === 0) {
@@ -49,7 +47,7 @@ export default function Form({ children, onSubmit, onCancel }: FormProps) {
 
           if (isEmpty) {
             valid = false;
-            ref.current?.setValidity(false); // mark input as invalid
+            ref.current?.setValidity(false);
           }
         }
       }
@@ -58,7 +56,6 @@ export default function Form({ children, onSubmit, onCancel }: FormProps) {
     return valid;
   };
 
-  // Attach refs to children
   const enhancedChildren = childArray.map((child, i) =>
     isValidElement(child)
       ? React.cloneElement(child as React.ReactElement<any>, {

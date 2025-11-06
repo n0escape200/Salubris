@@ -1,6 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { View, Button } from 'react-native';
+import { View } from 'react-native';
 import Routes from './src/Routes';
 import Footer from './src/Components/Footer';
 import { navigationRef } from './src/Utils/NavigationRef';

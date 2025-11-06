@@ -10,6 +10,8 @@ import Form from '../Components/Form';
 import { database } from '../DB/Database';
 import Product from '../DB/Models/Product';
 import ProductClass from '../Utils/Models';
+import { useNotification } from '../Utils/NotificationContext';
+
 export default function Tracking() {
   const [open, setOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -27,8 +29,15 @@ export default function Tracking() {
           product.fats = productForm.fats;
         });
       });
+      useNotification().addNotification({
+        type: 'SUCCESS',
+        message: 'Prodcut added succesfully',
+      });
     } catch (error) {
-      console.error('❌ Error creating product:', error);
+      useNotification().addNotification({
+        type: 'ERROR',
+        message: 'Error adding the prodcut',
+      });
     }
   }
 
