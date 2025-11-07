@@ -33,7 +33,7 @@ export const NotificationProvider = (props: NotificationProviderProps) => {
     const newNotification = { ...notification, id };
     setNotifications(prev => [...prev, newNotification]);
 
-    const timer = setTimeout(() => removeNotification(id), 3000);
+    const timer = setTimeout(() => removeNotification(id), 4000);
     timersRef.current[id] = timer;
   };
 

@@ -2,7 +2,7 @@ import { Pressable, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import CustomModal from '../Components/CustomModal';
 import Autocomplete from '../Components/Autocomplete';
 import Input from '../Components/Input';
@@ -17,6 +17,23 @@ export default function Tracking() {
   const [isFocused, setIsFocused] = useState(false);
   const autocompleteRef = useRef<any>(null);
   const [productForm, setProdcutForm] = useState(new ProductClass());
+  const { addNotification } = useNotification();
+  const [products, setProducts] = useState<Array<Product>>();
+
+  async function getProducts() {
+    try {
+      const allProducts = await database
+        .get<Product>('products')
+        .query()
+        .fetch();
+      setProducts(allProducts);
+    } catch (error) {
+      addNotification({
+        type: 'ERROR',
+        message: `${error}`,
+      });
+    }
+  }
 
   async function createEntry() {
     try {
@@ -29,17 +46,22 @@ export default function Tracking() {
           product.fats = productForm.fats;
         });
       });
-      useNotification().addNotification({
+      addNotification({
         type: 'SUCCESS',
-        message: 'Prodcut added succesfully',
+        message: `Prodcut ${productForm.name} added succesfully`,
       });
+      setOpen(false);
     } catch (error) {
-      useNotification().addNotification({
+      addNotification({
         type: 'ERROR',
-        message: 'Error adding the prodcut',
+        message: `${error}`,
       });
     }
   }
+
+  useEffect(() => {
+    getProducts();
+  }, []);
 
   return (
     <View style={styles.page}>
@@ -88,6 +110,8 @@ export default function Tracking() {
         </View>
       </View>
 
+      <View style={styles.container}></View>
+
       <CustomModal
         title="Add product"
         open={open}
@@ -101,7 +125,6 @@ export default function Tracking() {
           onSubmit={(shouldSubmit: boolean) => {
             if (shouldSubmit) {
               createEntry();
-              setOpen(false);
             }
           }}
           onCancel={() => {
