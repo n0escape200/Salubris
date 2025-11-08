@@ -1,13 +1,6 @@
 import { notificationTypes } from './Constants';
 
-// ======  CLASSES ======
-export default class ProductClass {
-  name: string = '';
-  calories: number = 0;
-  protein: number = 0;
-  carbs: number = 0;
-  fats: number = 0;
-}
+// ======  CLASSES =====
 
 // ======  END CLASSES ======
 

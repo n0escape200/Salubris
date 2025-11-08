@@ -10,5 +10,5 @@ export default class TrackLine extends Model {
   } as const;
 
   @field('date') date: string;
-  @children('products') products: Product;
+  @children('products') product: Product;
 }

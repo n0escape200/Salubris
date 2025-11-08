@@ -17,3 +17,12 @@ export default class Product extends Model {
 
   @relation('track_lines', 'track_line_id') trackLine: TrackLine;
 }
+
+export interface ProductType {
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  track_line_id?: string;
+}

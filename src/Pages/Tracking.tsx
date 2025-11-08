@@ -8,15 +8,22 @@ import Autocomplete from '../Components/Autocomplete';
 import Input from '../Components/Input';
 import Form from '../Components/Form';
 import { database } from '../DB/Database';
-import Product from '../DB/Models/Product';
-import ProductClass from '../Utils/Models';
+import Product, { ProductType } from '../DB/Models/Product';
 import { useNotification } from '../Utils/NotificationContext';
+import { Q } from '@nozbe/watermelondb';
 
 export default function Tracking() {
   const [open, setOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const autocompleteRef = useRef<any>(null);
-  const [productForm, setProdcutForm] = useState(new ProductClass());
+  const [productForm, setProdcutForm] = useState<ProductType>({
+    name: '',
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fats: 0,
+    track_line_id: undefined,
+  });
   const { addNotification } = useNotification();
   const [products, setProducts] = useState<Array<Product>>();
 
@@ -37,6 +44,18 @@ export default function Tracking() {
 
   async function createEntry() {
     try {
+      const productsData = await database.get<Product>('products').query();
+      const hasProdcut = productsData.find(product => product.name);
+      if (hasProdcut) {
+        addNotification({
+          type: 'ERROR',
+          message: `Produt ${Product.name} already exists`,
+        });
+        return;
+      }
+      await database
+        .get<Product>('products')
+        .query(Q.where('name', productForm.name));
       await database.write(async () => {
         await database.get<Product>('products').create(product => {
           product.name = productForm.name;
@@ -61,6 +80,7 @@ export default function Tracking() {
 
   useEffect(() => {
     getProducts();
+    console.log('test');
   }, []);
 
   return (
