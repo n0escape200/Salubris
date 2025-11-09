@@ -27,6 +27,14 @@ export default function Tracking() {
   const { addNotification } = useNotification();
   const [products, setProducts] = useState<Array<Product>>();
 
+  // useEffect(() => {
+  //   const getData = async () => {
+  //     const data = await database.get<Product>('products').query().fetch();
+  //     console.log(data);
+  //   };
+  //   getData();
+  // }, []);
+
   async function getProducts() {
     try {
       const allProducts = await database
@@ -44,12 +52,18 @@ export default function Tracking() {
 
   async function createEntry() {
     try {
-      const productsData = await database.get<Product>('products').query();
-      const hasProdcut = productsData.find(product => product.name);
+      const productsData = await database
+        .get<Product>('products')
+        .query()
+        .fetch();
+      console.log('data', productsData);
+      const hasProdcut = productsData.find(
+        product => product.name === productForm.name,
+      );
       if (hasProdcut) {
         addNotification({
           type: 'ERROR',
-          message: `Produt ${Product.name} already exists`,
+          message: `Produt ${productForm.name} already exists`,
         });
         return;
       }
