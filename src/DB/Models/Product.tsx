@@ -14,15 +14,16 @@ export default class Product extends Model {
   @field('protein') protein: number;
   @field('carbs') carbs: number;
   @field('fats') fats: number;
-
+  @field('track_line_id') trackLineId?: string;
   @relation('track_lines', 'track_line_id') trackLine: TrackLine;
 }
 
 export interface ProductType {
+  id: string | undefined;
   name: string;
   calories: number;
   protein: number;
   carbs: number;
   fats: number;
-  track_line_id?: string;
+  trackLineId?: string;
 }

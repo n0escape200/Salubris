@@ -9,6 +9,7 @@ import Input from '../Components/Input';
 import Form from '../Components/Form';
 import { database } from '../DB/Database';
 import Product, { ProductType } from '../DB/Models/Product';
+import TrackLine from '../DB/Models/TrackLine';
 import { useNotification } from '../Utils/NotificationContext';
 import { Q } from '@nozbe/watermelondb';
 
@@ -16,24 +17,21 @@ export default function Tracking() {
   const [open, setOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const autocompleteRef = useRef<any>(null);
-  const [productForm, setProdcutForm] = useState<ProductType>({
+  const [productForm, setProductForm] = useState<ProductType>({
+    id: undefined,
     name: '',
     calories: 0,
     protein: 0,
     carbs: 0,
     fats: 0,
-    track_line_id: undefined,
+    trackLineId: undefined,
   });
   const { addNotification } = useNotification();
-  const [products, setProducts] = useState<Array<Product>>();
+  const [products, setProducts] = useState<Product[]>([]);
 
-  // useEffect(() => {
-  //   const getData = async () => {
-  //     const data = await database.get<Product>('products').query().fetch();
-  //     console.log(data);
-  //   };
-  //   getData();
-  // }, []);
+  useEffect(() => {
+    getProducts();
+  }, []);
 
   async function getProducts() {
     try {
@@ -43,63 +41,16 @@ export default function Tracking() {
         .fetch();
       setProducts(allProducts);
     } catch (error) {
-      addNotification({
-        type: 'ERROR',
-        message: `${error}`,
-      });
+      addNotification({ type: 'ERROR', message: `${error}` });
     }
   }
 
-  async function createEntry() {
-    try {
-      const productsData = await database
-        .get<Product>('products')
-        .query()
-        .fetch();
-      console.log('data', productsData);
-      const hasProdcut = productsData.find(
-        product => product.name === productForm.name,
-      );
-      if (hasProdcut) {
-        addNotification({
-          type: 'ERROR',
-          message: `Produt ${productForm.name} already exists`,
-        });
-        return;
-      }
-      await database
-        .get<Product>('products')
-        .query(Q.where('name', productForm.name));
-      await database.write(async () => {
-        await database.get<Product>('products').create(product => {
-          product.name = productForm.name;
-          product.calories = productForm.calories;
-          product.protein = productForm.protein;
-          product.carbs = productForm.carbs;
-          product.fats = productForm.fats;
-        });
-      });
-      addNotification({
-        type: 'SUCCESS',
-        message: `Prodcut ${productForm.name} added succesfully`,
-      });
-      setOpen(false);
-    } catch (error) {
-      addNotification({
-        type: 'ERROR',
-        message: `${error}`,
-      });
-    }
-  }
-
-  useEffect(() => {
-    getProducts();
-    console.log('test');
-  }, []);
+  async function createEntry() {}
 
   return (
     <View style={styles.page}>
       <Text style={styles.textxl}>Calories consumed today</Text>
+
       <View style={styles.container}>
         <Text
           style={{
@@ -144,67 +95,66 @@ export default function Tracking() {
         </View>
       </View>
 
-      <View style={styles.container}></View>
-
       <CustomModal
         title="Add product"
         open={open}
         childRef={autocompleteRef}
         onPressOutside={() => setIsFocused(false)}
-        onClose={() => {
-          setOpen(false);
-        }}
+        onClose={() => setOpen(false)}
       >
         <Form
           onSubmit={(shouldSubmit: boolean) => {
-            if (shouldSubmit) {
-              createEntry();
-            }
+            if (shouldSubmit) createEntry();
           }}
-          onCancel={() => {
-            setOpen(false);
-          }}
+          onCancel={() => setOpen(false)}
         >
           <Autocomplete
             isFocused={isFocused}
             setIsFocused={setIsFocused}
             ref={autocompleteRef}
-            options={['test1', 'test2', 'test3', 'test4']}
+            options={products}
+            optionLabel="name"
+            onChange={(value: ProductType) => setProductForm(value)}
           />
           <Input
-            onChange={value => {
-              setProdcutForm(prev => ({ ...prev, name: value }));
-            }}
             label="Name"
+            value={productForm.name}
             validate
+            onChange={value =>
+              setProductForm(prev => ({ ...prev, name: value }))
+            }
           />
           <Input
-            onChange={value => {
-              setProdcutForm(prev => ({ ...prev, calories: +value }));
-            }}
             label="Calories"
+            value={`${productForm.calories}`}
             validate
+            onChange={value =>
+              setProductForm(prev => ({ ...prev, calories: +value }))
+            }
           />
           <Input
-            onChange={value => {
-              setProdcutForm(prev => ({ ...prev, protein: +value }));
-            }}
             label="Protein"
+            value={`${productForm.protein}`}
             validate
+            onChange={value =>
+              setProductForm(prev => ({ ...prev, protein: +value }))
+            }
           />
           <Input
-            onChange={value => {
-              setProdcutForm(prev => ({ ...prev, carbs: +value }));
-            }}
             label="Carbs"
+            value={`${productForm.carbs}`}
             validate
+            onChange={value =>
+              setProductForm(prev => ({ ...prev, carbs: +value }))
+            }
           />
           <Input
-            onChange={value => {
-              setProdcutForm(prev => ({ ...prev, fats: +value }));
-            }}
             label="Fats"
+            value={`${productForm.fats}`}
             validate
+            onChange={value =>
+              setProductForm(prev => ({ ...prev, fats: +value }))
+            }
           />
         </Form>
       </CustomModal>

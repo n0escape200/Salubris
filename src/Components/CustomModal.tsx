@@ -1,4 +1,4 @@
-import { ReactNode, RefObject, useEffect, useRef } from 'react';
+import React, { ReactNode, RefObject, useEffect, useRef } from 'react';
 import {
   GestureResponderEvent,
   Pressable,
@@ -6,60 +6,109 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  ViewStyle,
 } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 
+type AnyRef = RefObject<any> | RefObject<any>[];
+
 type CustomModalProps = {
-  title: string;
+  title?: string;
   open: boolean;
   onClose?: () => void;
   children?: ReactNode;
-  childRef?: RefObject<any>;
+  /**
+   * Accept either a single RefObject or an array of RefObjects to check against.
+   */
+  childRef?: AnyRef;
   onPressOutside?: () => void;
+  overlayStyle?: ViewStyle;
 };
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+type Box = { x: number; y: number; width: number; height: number };
+
+/** helper to measure a single ref using measureInWindow and return a Promise<Box|null> */
+const measureRef = (ref: RefObject<any>): Promise<Box | null> =>
+  new Promise(resolve => {
+    try {
+      if (!ref?.current || typeof ref.current.measureInWindow !== 'function') {
+        resolve(null);
+        return;
+      }
+
+      // measureInWindow(callback(x, y, width, height))
+      ref.current.measureInWindow(
+        (x: number, y: number, width: number, height: number) => {
+          // if width/height are zero, view might not be laid out yet; still return the values
+          resolve({ x, y, width, height });
+        },
+      );
+    } catch (err) {
+      // measurement failed (e.g., wrong ref type)
+      resolve(null);
+    }
+  });
+
+/** normalize childRef prop to array of refs */
+const normalizeRefs = (childRef?: AnyRef): RefObject<any>[] => {
+  if (!childRef) return [];
+  if (Array.isArray(childRef)) return childRef;
+  return [childRef];
+};
+
 export default function CustomModal(props: CustomModalProps) {
-  const { open, onClose, children, childRef, onPressOutside } = props;
+  const { open, onClose, children, childRef, onPressOutside, overlayStyle } =
+    props;
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current; // starts off-screen
 
   useEffect(() => {
-    if (open) {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: SCREEN_HEIGHT,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    }
+    Animated.timing(slideAnim, {
+      toValue: open ? 0 : SCREEN_HEIGHT,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   }, [open, slideAnim]);
 
-  if (!open) return null; // modal is hidden
+  if (!open) return null;
 
-  const handleTapOutside = (evt: GestureResponderEvent) => {
-    if (!childRef?.current) return;
+  const handleTapOutside = async (evt: GestureResponderEvent) => {
+    // If there's no onPressOutside, nothing to do
+    if (!onPressOutside) return;
 
-    childRef.current.measureInWindow(
-      (x: number, y: number, width: number, height: number) => {
-        const { pageX, pageY } = evt.nativeEvent;
-        const inside =
-          pageX >= x && pageX <= x + width && pageY >= y && pageY <= y + height;
+    const refs = normalizeRefs(childRef);
+    if (refs.length === 0) {
+      // no refs provided => treat every tap as outside
+      onPressOutside();
+      return;
+    }
 
-        if (!inside && onPressOutside) onPressOutside();
-      },
-    );
+    const { pageX, pageY } = evt.nativeEvent;
+
+    // measure all refs in parallel
+    const measurements = await Promise.all(refs.map(r => measureRef(r)));
+
+    // check if the touch is inside any measured box
+    const touchedInsideAny = measurements.some(box => {
+      if (!box) return false;
+      return (
+        pageX >= box.x &&
+        pageX <= box.x + box.width &&
+        pageY >= box.y &&
+        pageY <= box.y + box.height
+      );
+    });
+
+    if (!touchedInsideAny) {
+      onPressOutside();
+    }
   };
 
   return (
     <View
-      style={styles.overlay}
+      style={[styles.overlay, overlayStyle]}
       onStartShouldSetResponder={() => true}
       onResponderRelease={handleTapOutside}
     >
@@ -83,14 +132,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'black', // full black background
+    backgroundColor: 'rgba(0,0,0,0.8)',
     zIndex: 9999,
   },
   modal: {
-    flex: 1, // full-screen modal
+    flex: 1,
     padding: 20,
-    backgroundColor: 'black', // match background
-    justifyContent: 'flex-start', // content starts from top
+    backgroundColor: 'black',
+    justifyContent: 'flex-start',
   },
   closeButton: {
     backgroundColor: '#3a3a3aff',
