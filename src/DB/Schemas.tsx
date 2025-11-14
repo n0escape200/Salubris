@@ -18,6 +18,7 @@ export const databaseSchema = appSchema({
       columns: [
         { name: 'date', type: 'string' },
         { name: 'quantity', type: 'number' },
+        { name: 'unit', type: 'string' },
         { name: 'product_id', type: 'string' },
       ],
     }),

@@ -22,12 +22,7 @@ export function Login() {
             Forgot password?
           </Text>
         </Pressable>
-        <CustomButton
-          label="Login"
-          innerShadow
-          color="orange"
-          fontColor="white"
-        />
+        <CustomButton label="Login" color="orange" fontColor="white" />
         <Divider />
         <View
           style={{

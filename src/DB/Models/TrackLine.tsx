@@ -1,6 +1,5 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, children, relation } from '@nozbe/watermelondb/decorators';
-import Product from './Product';
+import { field, relation } from '@nozbe/watermelondb/decorators';
 
 export default class TrackLine extends Model {
   static table = 'track_lines';
@@ -12,7 +11,7 @@ export default class TrackLine extends Model {
   @field('date') date: string;
   @field('quantity') quantity: number;
   @field('unit') unit: string;
-  @relation('product', 'product_id') product: Product;
+  @relation('products', 'product_id') product_id: any;
 }
 
 export interface TrackLineType {
@@ -20,5 +19,5 @@ export interface TrackLineType {
   date: string;
   quantity: number;
   unit: string;
-  product: string;
+  product_id: string;
 }

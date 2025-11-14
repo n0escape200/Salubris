@@ -11,7 +11,7 @@ import { database } from '../DB/Database';
 import Product, { ProductType } from '../DB/Models/Product';
 import { useNotification } from '../Utils/NotificationContext';
 import { mapState } from '../Utils/Functions';
-import TrackLine from '../DB/Models/TrackLine';
+import TrackLine, { TrackLineType } from '../DB/Models/TrackLine';
 
 export default function Tracking() {
   const [open, setOpen] = useState(false);
@@ -32,14 +32,16 @@ export default function Tracking() {
   });
   const { addNotification } = useNotification();
   const [products, setProducts] = useState<Product[]>([]);
+  const [trackLines, setTrackLines] = useState<TrackLineType[]>([]);
 
   useEffect(() => {
     getProducts();
+    getTrackLines();
   }, []);
 
   useEffect(() => {
-    console.log(productForm);
-  }, [productForm]);
+    console.log(trackLines);
+  }, [trackLines]);
 
   async function getProducts() {
     try {
@@ -53,6 +55,17 @@ export default function Tracking() {
     }
   }
 
+  async function getTrackLines() {
+    try {
+      const allTrackLines = await database
+        .get<TrackLine>('track_lines')
+        .query()
+        .fetch();
+      setTrackLines(allTrackLines);
+    } catch (error) {
+      addNotification({ type: 'ERROR', message: `${error}` });
+    }
+  }
   async function createEntry() {
     try {
       await database.write(async () => {
@@ -76,11 +89,11 @@ export default function Tracking() {
           });
         }
 
-        await database.get<TrackLine>('trackLines').create(trackLine => {
+        await database.get<TrackLine>('track_lines').create(trackLine => {
           trackLine.date = new Date().toString();
           trackLine.quantity = +quantity.value;
           trackLine.unit = quantity.unit;
-          trackLine.product = product;
+          trackLine.product_id.set(product);
         });
         addNotification({
           type: 'SUCCESS',
