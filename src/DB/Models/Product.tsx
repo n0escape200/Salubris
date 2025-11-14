@@ -1,12 +1,11 @@
 import { Model } from '@nozbe/watermelondb';
-import { field, relation } from '@nozbe/watermelondb/decorators';
-import TrackLine from './TrackLine';
+import { field } from '@nozbe/watermelondb/decorators';
 
 export default class Product extends Model {
   static table = 'products';
 
   static associations = {
-    track_lines: { type: 'belongs_to', key: 'track_line_id' },
+    track_lines: { type: 'has_many', foreignKey: 'product_id' },
   } as const;
 
   @field('name') name: string;
@@ -14,8 +13,6 @@ export default class Product extends Model {
   @field('protein') protein: number;
   @field('carbs') carbs: number;
   @field('fats') fats: number;
-  @field('track_line_id') trackLineId?: string;
-  @relation('track_lines', 'track_line_id') trackLine: TrackLine;
 }
 
 export interface ProductType {
@@ -25,5 +22,4 @@ export interface ProductType {
   protein: number;
   carbs: number;
   fats: number;
-  trackLineId?: string;
 }

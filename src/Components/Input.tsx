@@ -17,6 +17,7 @@ type InputProps = {
   validate?: boolean;
   onChange?: (value: string) => void;
   backgroundColor?: string;
+  type?: 'number' | undefined;
 };
 
 export default forwardRef(function Input(
@@ -26,6 +27,7 @@ export default forwardRef(function Input(
     validate = false,
     onChange,
     backgroundColor = '#1e1e1e',
+    type,
   }: InputProps,
   ref,
 ) {
@@ -76,6 +78,7 @@ export default forwardRef(function Input(
           paddingTop: 18,
           backgroundColor,
         }}
+        keyboardType={type === 'number' ? 'numeric' : 'default'}
         value={value}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}

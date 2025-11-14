@@ -9,13 +9,14 @@ import Input from '../Components/Input';
 import Form from '../Components/Form';
 import { database } from '../DB/Database';
 import Product, { ProductType } from '../DB/Models/Product';
-import TrackLine from '../DB/Models/TrackLine';
 import { useNotification } from '../Utils/NotificationContext';
-import { Q } from '@nozbe/watermelondb';
+import { mapState } from '../Utils/Functions';
+import TrackLine from '../DB/Models/TrackLine';
 
 export default function Tracking() {
   const [open, setOpen] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
+  const [isFocusedProducts, setIsFocusedProducts] = useState(false);
+  const [isFocusedMass, setIsFocusedMass] = useState(false);
   const autocompleteRef = useRef<any>(null);
   const [productForm, setProductForm] = useState<ProductType>({
     id: undefined,
@@ -24,7 +25,10 @@ export default function Tracking() {
     protein: 0,
     carbs: 0,
     fats: 0,
-    trackLineId: undefined,
+  });
+  const [quantity, setQuantity] = useState({
+    value: '',
+    unit: '',
   });
   const { addNotification } = useNotification();
   const [products, setProducts] = useState<Product[]>([]);
@@ -32,6 +36,10 @@ export default function Tracking() {
   useEffect(() => {
     getProducts();
   }, []);
+
+  useEffect(() => {
+    console.log(productForm);
+  }, [productForm]);
 
   async function getProducts() {
     try {
@@ -45,7 +53,47 @@ export default function Tracking() {
     }
   }
 
-  async function createEntry() {}
+  async function createEntry() {
+    try {
+      await database.write(async () => {
+        let product;
+
+        if (productForm.id) {
+          product = await database
+            .get<Product>('products')
+            .find(productForm.id);
+        } else {
+          product = await database.get<Product>('products').create(product => {
+            product.name = productForm.name;
+            product.calories = productForm.calories;
+            product.protein = productForm.protein;
+            product.carbs = productForm.carbs;
+            product.fats = productForm.fats;
+          });
+          addNotification({
+            type: 'SUCCESS',
+            message: `${product.name} created successfully`,
+          });
+        }
+
+        await database.get<TrackLine>('trackLines').create(trackLine => {
+          trackLine.date = new Date().toString();
+          trackLine.quantity = +quantity.value;
+          trackLine.unit = quantity.unit;
+          trackLine.product = product;
+        });
+        addNotification({
+          type: 'SUCCESS',
+          message: `Track line was added successfully`,
+        });
+      });
+
+      setOpen(false);
+    } catch (error) {
+      console.log(error);
+      addNotification({ type: 'ERROR', message: `${error}` });
+    }
+  }
 
   return (
     <View style={styles.page}>
@@ -99,22 +147,28 @@ export default function Tracking() {
         title="Add product"
         open={open}
         childRef={autocompleteRef}
-        onPressOutside={() => setIsFocused(false)}
+        onPressOutside={() => {
+          setIsFocusedProducts(false);
+          setIsFocusedMass(false);
+        }}
         onClose={() => setOpen(false)}
       >
         <Form
-          onSubmit={(shouldSubmit: boolean) => {
-            if (shouldSubmit) createEntry();
+          onSubmit={async () => {
+            await createEntry();
           }}
           onCancel={() => setOpen(false)}
         >
           <Autocomplete
-            isFocused={isFocused}
-            setIsFocused={setIsFocused}
+            placeholder="Products"
+            isFocused={isFocusedProducts}
+            setIsFocused={setIsFocusedProducts}
             ref={autocompleteRef}
             options={products}
             optionLabel="name"
-            onChange={(value: ProductType) => setProductForm(value)}
+            onChange={(value: ProductType) =>
+              mapState(value, productForm, setProductForm)
+            }
           />
           <Input
             label="Name"
@@ -131,6 +185,7 @@ export default function Tracking() {
             onChange={value =>
               setProductForm(prev => ({ ...prev, calories: +value }))
             }
+            type="number"
           />
           <Input
             label="Protein"
@@ -139,6 +194,7 @@ export default function Tracking() {
             onChange={value =>
               setProductForm(prev => ({ ...prev, protein: +value }))
             }
+            type="number"
           />
           <Input
             label="Carbs"
@@ -147,6 +203,7 @@ export default function Tracking() {
             onChange={value =>
               setProductForm(prev => ({ ...prev, carbs: +value }))
             }
+            type="number"
           />
           <Input
             label="Fats"
@@ -155,7 +212,41 @@ export default function Tracking() {
             onChange={value =>
               setProductForm(prev => ({ ...prev, fats: +value }))
             }
+            type="number"
           />
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <View style={{ width: '70%' }}>
+              <Input
+                label="Quantity"
+                value={`${quantity.value}`}
+                validate
+                onChange={value =>
+                  setQuantity(prev => ({ ...prev, value: value }))
+                }
+                type="number"
+              />
+            </View>
+            <View style={{ width: '20%' }}>
+              <Autocomplete
+                placeholder="Unit"
+                ref={autocompleteRef}
+                isFocused={isFocusedMass}
+                setIsFocused={setIsFocusedMass}
+                initValue={'g'}
+                options={['kg', 'g']}
+                onChange={value => {
+                  setQuantity(prev => ({ ...prev, unit: value }));
+                }}
+              />
+            </View>
+          </View>
         </Form>
       </CustomModal>
     </View>

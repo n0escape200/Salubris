@@ -7,6 +7,7 @@ import {
   Animated,
   Dimensions,
   ViewStyle,
+  ScrollView,
 } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
@@ -107,7 +108,7 @@ export default function CustomModal(props: CustomModalProps) {
   };
 
   return (
-    <View
+    <ScrollView
       style={[styles.overlay, overlayStyle]}
       onStartShouldSetResponder={() => true}
       onResponderRelease={handleTapOutside}
@@ -121,7 +122,7 @@ export default function CustomModal(props: CustomModalProps) {
 
         {children}
       </Animated.View>
-    </View>
+    </ScrollView>
   );
 }
 

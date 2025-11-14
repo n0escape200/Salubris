@@ -13,5 +13,13 @@ export const databaseSchema = appSchema({
         { name: 'fats', type: 'number' },
       ],
     }),
+    tableSchema({
+      name: 'track_lines',
+      columns: [
+        { name: 'date', type: 'string' },
+        { name: 'quantity', type: 'number' },
+        { name: 'product_id', type: 'string' },
+      ],
+    }),
   ],
 });

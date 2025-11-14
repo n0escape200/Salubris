@@ -1,11 +1,4 @@
-import {
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-  Dimensions,
-} from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import {
   useState,
   useRef,
@@ -19,21 +12,34 @@ import { styles } from '../Utils/Styles';
 type Option = string | Record<string, any>;
 
 type AutocompleteProps = {
+  placeholder: string;
   isFocused: boolean;
   setIsFocused: React.Dispatch<React.SetStateAction<boolean>>;
   options: Option[];
   optionLabel?: string;
   onChange?: (value: any) => void;
+  initValue?: any;
 };
 
 const Autocomplete = forwardRef<View, AutocompleteProps>((props, ref) => {
-  const { isFocused, setIsFocused, options, optionLabel, onChange } = props;
+  const {
+    isFocused,
+    setIsFocused,
+    options,
+    optionLabel,
+    onChange,
+    placeholder,
+    initValue,
+  } = props;
   const containerRef = useRef<View>(null);
   const inputRef = useRef<TextInput>(null);
   const [value, setValue] = useState('');
 
   useImperativeHandle(ref, () => containerRef.current!);
   useEffect(() => {
+    if (initValue) {
+      setValue(initValue);
+    }
     return () => {
       setIsFocused(false);
     };
@@ -73,7 +79,7 @@ const Autocomplete = forwardRef<View, AutocompleteProps>((props, ref) => {
           borderBottomWidth: 0.5,
           color: 'white',
         }}
-        placeholder="Product"
+        placeholder={placeholder}
         placeholderTextColor="#525252ff"
         onFocus={() => {
           setIsFocused(true);
