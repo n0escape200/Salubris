@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
@@ -28,7 +28,7 @@ export default function Tracking() {
   });
   const [quantity, setQuantity] = useState({
     value: '',
-    unit: '',
+    unit: 'g',
   });
   const { addNotification } = useNotification();
   const [products, setProducts] = useState<Product[]>([]);
@@ -37,11 +37,8 @@ export default function Tracking() {
   useEffect(() => {
     getProducts();
     getTrackLines();
+    console.log(new Date().toISOString());
   }, []);
-
-  useEffect(() => {
-    console.log(trackLines);
-  }, [trackLines]);
 
   async function getProducts() {
     try {
@@ -66,6 +63,7 @@ export default function Tracking() {
       addNotification({ type: 'ERROR', message: `${error}` });
     }
   }
+
   async function createEntry() {
     try {
       await database.write(async () => {
@@ -90,7 +88,7 @@ export default function Tracking() {
         }
 
         await database.get<TrackLine>('track_lines').create(trackLine => {
-          trackLine.date = new Date().toString();
+          trackLine.date = new Date().toLocaleDateString();
           trackLine.quantity = +quantity.value;
           trackLine.unit = quantity.unit;
           trackLine.product_id.set(product);
@@ -131,10 +129,10 @@ export default function Tracking() {
             <Text style={styles.textl}>Fat:</Text>
           </View>
           <View>
-            <Text style={styles.textl}>999</Text>
-            <Text style={styles.textl}>999</Text>
-            <Text style={styles.textl}>999</Text>
-            <Text style={styles.textl}>999</Text>
+            <Text style={styles.textl}>0</Text>
+            <Text style={styles.textl}>0</Text>
+            <Text style={styles.textl}>0</Text>
+            <Text style={styles.textl}>0</Text>
           </View>
         </View>
       </View>
@@ -151,10 +149,12 @@ export default function Tracking() {
         >
           <FontAwesomeIcon size={25} color="#ffffffff" icon={faPlus} />
         </Pressable>
-        <View>
-          <Text style={styles.textxl}>{new Date().toLocaleDateString()}</Text>
-        </View>
+        <Text style={styles.textxl}>
+          {new Intl.DateTimeFormat('en-GB').format(new Date())}
+        </Text>
       </View>
+
+      <ScrollView style={styles.container}></ScrollView>
 
       <CustomModal
         title="Add product"
@@ -252,7 +252,7 @@ export default function Tracking() {
                 ref={autocompleteRef}
                 isFocused={isFocusedMass}
                 setIsFocused={setIsFocusedMass}
-                initValue={'g'}
+                initValue={quantity.unit}
                 options={['kg', 'g']}
                 onChange={value => {
                   setQuantity(prev => ({ ...prev, unit: value }));
