@@ -11,7 +11,8 @@ import { database } from '../DB/Database';
 import Product, { ProductType } from '../DB/Models/Product';
 import { useNotification } from '../Utils/NotificationContext';
 import { mapState } from '../Utils/Functions';
-import TrackLine, { TrackLineType } from '../DB/Models/TrackLine';
+import TrackLine from '../DB/Models/TrackLine';
+import TrackLineItem from '../Components/TrackLineItem';
 
 export default function Tracking() {
   const [open, setOpen] = useState(false);
@@ -26,19 +27,24 @@ export default function Tracking() {
     carbs: 0,
     fats: 0,
   });
-  const [quantity, setQuantity] = useState({
-    value: '',
-    unit: 'g',
-  });
+  const [quantity, setQuantity] = useState({ value: '', unit: 'g' });
   const { addNotification } = useNotification();
   const [products, setProducts] = useState<Product[]>([]);
-  const [trackLines, setTrackLines] = useState<TrackLineType[]>([]);
+  const [trackLines, setTrackLines] = useState<TrackLine[]>([]);
+  const [todayLines, setTodayLines] = useState<TrackLine[]>([]);
+  const [shouldUpdate, setShouldUpdate] = useState(true);
 
   useEffect(() => {
-    getProducts();
-    getTrackLines();
-    console.log(new Date().toISOString());
-  }, []);
+    if (shouldUpdate) {
+      getProducts();
+      getTrackLines();
+    }
+    setShouldUpdate(false);
+  }, [shouldUpdate]);
+
+  useEffect(() => {
+    filterTodayLines();
+  }, [trackLines]);
 
   async function getProducts() {
     try {
@@ -74,12 +80,12 @@ export default function Tracking() {
             .get<Product>('products')
             .find(productForm.id);
         } else {
-          product = await database.get<Product>('products').create(product => {
-            product.name = productForm.name;
-            product.calories = productForm.calories;
-            product.protein = productForm.protein;
-            product.carbs = productForm.carbs;
-            product.fats = productForm.fats;
+          product = await database.get<Product>('products').create(p => {
+            p.name = productForm.name;
+            p.calories = productForm.calories;
+            p.protein = productForm.protein;
+            p.carbs = productForm.carbs;
+            p.fats = productForm.fats;
           });
           addNotification({
             type: 'SUCCESS',
@@ -88,11 +94,12 @@ export default function Tracking() {
         }
 
         await database.get<TrackLine>('track_lines').create(trackLine => {
-          trackLine.date = new Date().toLocaleDateString();
+          trackLine.date = new Date().toISOString();
           trackLine.quantity = +quantity.value;
           trackLine.unit = quantity.unit;
           trackLine.product_id.set(product);
         });
+
         addNotification({
           type: 'SUCCESS',
           message: `Track line was added successfully`,
@@ -100,10 +107,17 @@ export default function Tracking() {
       });
 
       setOpen(false);
+      setShouldUpdate(true);
     } catch (error) {
-      console.log(error);
       addNotification({ type: 'ERROR', message: `${error}` });
     }
+  }
+
+  function filterTodayLines() {
+    const today = new Date().toISOString().slice(0, 10);
+    const lines = trackLines.filter(line => line.date.slice(0, 10) === today);
+
+    setTodayLines(lines);
   }
 
   return (
@@ -119,7 +133,7 @@ export default function Tracking() {
             marginBottom: 10,
           }}
         >
-          Intake for Monday
+          Intake for today
         </Text>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <View>
@@ -137,7 +151,7 @@ export default function Tracking() {
         </View>
       </View>
 
-      <View style={{ display: 'flex', flexDirection: 'row', gap: 20 }}>
+      <View style={{ flexDirection: 'row', gap: 20 }}>
         <Pressable
           onPress={() => setOpen(true)}
           style={{
@@ -154,7 +168,20 @@ export default function Tracking() {
         </Text>
       </View>
 
-      <ScrollView style={styles.container}></ScrollView>
+      <ScrollView style={{ ...styles.container, padding: 10 }}>
+        {todayLines.length === 0 ? (
+          <Text style={styles.textxl}>No data</Text>
+        ) : (
+          todayLines.map((line, index) => (
+            <TrackLineItem
+              setShouldUpdate={setShouldUpdate}
+              key={line.id}
+              index={index}
+              line={line}
+            />
+          ))
+        )}
+      </ScrollView>
 
       <CustomModal
         title="Add product"
@@ -164,14 +191,12 @@ export default function Tracking() {
           setIsFocusedProducts(false);
           setIsFocusedMass(false);
         }}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setShouldUpdate(true);
+          setOpen(false);
+        }}
       >
-        <Form
-          onSubmit={async () => {
-            await createEntry();
-          }}
-          onCancel={() => setOpen(false)}
-        >
+        <Form onSubmit={createEntry} onCancel={() => setOpen(false)}>
           <Autocomplete
             placeholder="Products"
             isFocused={isFocusedProducts}
@@ -187,63 +212,44 @@ export default function Tracking() {
             label="Name"
             value={productForm.name}
             validate
-            onChange={value =>
-              setProductForm(prev => ({ ...prev, name: value }))
-            }
+            onChange={v => setProductForm(p => ({ ...p, name: v }))}
           />
           <Input
             label="Calories"
             value={`${productForm.calories}`}
             validate
-            onChange={value =>
-              setProductForm(prev => ({ ...prev, calories: +value }))
-            }
             type="number"
+            onChange={v => setProductForm(p => ({ ...p, calories: +v }))}
           />
           <Input
             label="Protein"
             value={`${productForm.protein}`}
             validate
-            onChange={value =>
-              setProductForm(prev => ({ ...prev, protein: +value }))
-            }
             type="number"
+            onChange={v => setProductForm(p => ({ ...p, protein: +v }))}
           />
           <Input
             label="Carbs"
             value={`${productForm.carbs}`}
             validate
-            onChange={value =>
-              setProductForm(prev => ({ ...prev, carbs: +value }))
-            }
             type="number"
+            onChange={v => setProductForm(p => ({ ...p, carbs: +v }))}
           />
           <Input
             label="Fats"
             value={`${productForm.fats}`}
             validate
-            onChange={value =>
-              setProductForm(prev => ({ ...prev, fats: +value }))
-            }
             type="number"
+            onChange={v => setProductForm(p => ({ ...p, fats: +v }))}
           />
-          <View
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 10,
-            }}
-          >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={{ width: '70%' }}>
               <Input
                 label="Quantity"
-                value={`${quantity.value}`}
+                value={quantity.value}
                 validate
-                onChange={value =>
-                  setQuantity(prev => ({ ...prev, value: value }))
-                }
                 type="number"
+                onChange={v => setQuantity(q => ({ ...q, value: v }))}
               />
             </View>
             <View style={{ width: '20%' }}>
@@ -254,9 +260,7 @@ export default function Tracking() {
                 setIsFocused={setIsFocusedMass}
                 initValue={quantity.unit}
                 options={['kg', 'g']}
-                onChange={value => {
-                  setQuantity(prev => ({ ...prev, unit: value }));
-                }}
+                onChange={v => setQuantity(q => ({ ...q, unit: v }))}
               />
             </View>
           </View>
