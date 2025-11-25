@@ -33,7 +33,12 @@ export default function Tracking() {
   const [trackLines, setTrackLines] = useState<TrackLine[]>([]);
   const [todayLines, setTodayLines] = useState<TrackLine[]>([]);
   const [shouldUpdate, setShouldUpdate] = useState(true);
-
+  const [calculatedMacros, setCalculatedMacros] = useState({
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fats: 0,
+  });
   useEffect(() => {
     if (shouldUpdate) {
       getProducts();
@@ -43,8 +48,41 @@ export default function Tracking() {
   }, [shouldUpdate]);
 
   useEffect(() => {
+    if (trackLines.length > 0) {
+      calculateTotals();
+    } else {
+      setCalculatedMacros({
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fats: 0,
+      });
+    }
+  }, [trackLines]);
+
+  useEffect(() => {
     filterTodayLines();
   }, [trackLines]);
+
+  async function calculateTotals() {
+    const totals = { calories: 0, protein: 0, carbs: 0, fats: 0 };
+
+    const macroPromises = trackLines.map(async line => {
+      const product = await line.product_id.fetch(); // ⬅️ important
+
+      const qty = line.unit === 'kg' ? line.quantity * 1000 : line.quantity;
+      const factor = qty / 100; // because product macros are per 100g
+
+      totals.calories += product.calories * factor;
+      totals.protein += product.protein * factor;
+      totals.carbs += product.carbs * factor;
+      totals.fats += product.fats * factor;
+    });
+
+    await Promise.all(macroPromises);
+
+    setCalculatedMacros(totals);
+  }
 
   async function getProducts() {
     try {
@@ -120,6 +158,20 @@ export default function Tracking() {
     setTodayLines(lines);
   }
 
+  async function deleteTrackLine(line: TrackLine) {
+    try {
+      await database.write(async () => {
+        await line.markAsDeleted();
+      });
+
+      setTrackLines(prev => prev.filter(l => l.id !== line.id));
+
+      setShouldUpdate(true);
+    } catch (err) {
+      addNotification({ type: 'ERROR', message: `${err}` });
+    }
+  }
+
   return (
     <View style={styles.page}>
       <Text style={styles.textxl}>Calories consumed today</Text>
@@ -143,10 +195,10 @@ export default function Tracking() {
             <Text style={styles.textl}>Fat:</Text>
           </View>
           <View>
-            <Text style={styles.textl}>0</Text>
-            <Text style={styles.textl}>0</Text>
-            <Text style={styles.textl}>0</Text>
-            <Text style={styles.textl}>0</Text>
+            <Text style={styles.textl}>{calculatedMacros.calories}</Text>
+            <Text style={styles.textl}>{calculatedMacros.protein}</Text>
+            <Text style={styles.textl}>{calculatedMacros.carbs}</Text>
+            <Text style={styles.textl}>{calculatedMacros.fats}</Text>
           </View>
         </View>
       </View>
@@ -174,10 +226,10 @@ export default function Tracking() {
         ) : (
           todayLines.map((line, index) => (
             <TrackLineItem
-              setShouldUpdate={setShouldUpdate}
               key={line.id}
               index={index}
               line={line}
+              deleteTrackLine={deleteTrackLine}
             />
           ))
         )}

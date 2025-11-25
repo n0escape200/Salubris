@@ -10,13 +10,13 @@ import { useNotification } from '../Utils/NotificationContext';
 type TrackLineItemProps = {
   line: TrackLine;
   index: number;
-  setShouldUpdate: React.Dispatch<React.SetStateAction<boolean>>;
+  deleteTrackLine: (line: TrackLine) => Promise<void>;
 };
 
 export default function TrackLineItem({
   line,
   index,
-  setShouldUpdate,
+  deleteTrackLine,
 }: TrackLineItemProps) {
   const [product, setProduct] = useState<Product | null>(null);
   const { addNotification } = useNotification();
@@ -28,7 +28,7 @@ export default function TrackLineItem({
 
   function handleDeleteLine() {
     try {
-      setShouldUpdate(true);
+      deleteTrackLine(line);
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
     }
@@ -50,33 +50,28 @@ export default function TrackLineItem({
         justifyContent: 'space-between',
       }}
     >
-      <Text
+      <View
         style={{
-          ...styles.textxl,
-          borderRadius: 20,
-          backgroundColor: '#1c1c1c',
-          borderWidth: 1,
-          padding: 5,
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
         }}
       >
-        {`#${index + 1}`}
-      </Text>
-      <View>
-        <Text style={{ ...styles.textl, fontSize: 20 }}>{product.name}</Text>
-        <View
+        <Text
           style={{
-            display: 'flex',
-            flex: 1,
-            flexDirection: 'row',
-            gap: 15,
+            ...styles.textxl,
+            borderRadius: 15,
+            backgroundColor: '#1c1c1c',
+            borderWidth: 1,
+            padding: 5,
+            fontSize: 15,
           }}
         >
-          <Text style={{ fontSize: 12, color: 'white' }}>
-            Calories: {product.calories}
-          </Text>
-          <Text style={{ fontSize: 12, color: 'white' }}>
-            Protein: {product.protein}
-          </Text>
+          {`#${index + 1}`}
+        </Text>
+        <View>
+          <Text style={{ ...styles.textl, fontSize: 20 }}>{product.name}</Text>
           <Text style={{ fontSize: 12, color: 'white' }}>
             Quantity: {line.quantity}
             {line.unit}
