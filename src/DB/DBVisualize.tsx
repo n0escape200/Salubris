@@ -4,7 +4,7 @@ import Table from '../Components/Table';
 import { database } from './Database';
 import Product from './Models/Product';
 import { useEffect, useState } from 'react';
-import { useNotification } from '../Utils/NotificationContext';
+import { useNotification } from '../Utils/Contexts/NotificationContext';
 import { styles } from '../Utils/Styles';
 import TrackLine from './Models/TrackLine';
 type DBVIsualizeProps = {
@@ -33,7 +33,7 @@ export default function DBVIsualize(props: DBVIsualizeProps) {
 
   async function getTrackLines() {
     try {
-      const allTrackLines = await database
+      let allTrackLines = await database
         .get<TrackLine>('track_lines')
         .query()
         .fetch();

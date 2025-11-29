@@ -2,19 +2,22 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useRef, useState } from 'react';
 import CustomModal from '../Components/CustomModal';
 import Autocomplete from '../Components/Autocomplete';
 import Input from '../Components/Input';
 import Form from '../Components/Form';
 import { database } from '../DB/Database';
 import Product, { ProductType } from '../DB/Models/Product';
-import { useNotification } from '../Utils/NotificationContext';
+import { useNotification } from '../Utils/Contexts/NotificationContext';
 import { mapState } from '../Utils/Functions';
 import TrackLine from '../DB/Models/TrackLine';
 import TrackLineItem from '../Components/TrackLineItem';
+import { TrackingContext } from '../Utils/Contexts/TrackingContext';
 
 export default function Tracking() {
+  const { addNotification } = useNotification();
+  const trackContext = useContext(TrackingContext);
   const [open, setOpen] = useState(false);
   const [isFocusedProducts, setIsFocusedProducts] = useState(false);
   const [isFocusedMass, setIsFocusedMass] = useState(false);
@@ -28,85 +31,6 @@ export default function Tracking() {
     fats: 0,
   });
   const [quantity, setQuantity] = useState({ value: '', unit: 'g' });
-  const { addNotification } = useNotification();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [trackLines, setTrackLines] = useState<TrackLine[]>([]);
-  const [todayLines, setTodayLines] = useState<TrackLine[]>([]);
-  const [shouldUpdate, setShouldUpdate] = useState(true);
-  const [calculatedMacros, setCalculatedMacros] = useState({
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fats: 0,
-  });
-  useEffect(() => {
-    if (shouldUpdate) {
-      getProducts();
-      getTrackLines();
-    }
-    setShouldUpdate(false);
-  }, [shouldUpdate]);
-
-  useEffect(() => {
-    if (trackLines.length > 0) {
-      calculateTotals();
-    } else {
-      setCalculatedMacros({
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fats: 0,
-      });
-    }
-  }, [trackLines]);
-
-  useEffect(() => {
-    filterTodayLines();
-  }, [trackLines]);
-
-  async function calculateTotals() {
-    const totals = { calories: 0, protein: 0, carbs: 0, fats: 0 };
-
-    const macroPromises = trackLines.map(async line => {
-      const product = await line.product_id.fetch(); // ⬅️ important
-
-      const qty = line.unit === 'kg' ? line.quantity * 1000 : line.quantity;
-      const factor = qty / 100; // because product macros are per 100g
-
-      totals.calories += product.calories * factor;
-      totals.protein += product.protein * factor;
-      totals.carbs += product.carbs * factor;
-      totals.fats += product.fats * factor;
-    });
-
-    await Promise.all(macroPromises);
-
-    setCalculatedMacros(totals);
-  }
-
-  async function getProducts() {
-    try {
-      const allProducts = await database
-        .get<Product>('products')
-        .query()
-        .fetch();
-      setProducts(allProducts);
-    } catch (error) {
-      addNotification({ type: 'ERROR', message: `${error}` });
-    }
-  }
-
-  async function getTrackLines() {
-    try {
-      const allTrackLines = await database
-        .get<TrackLine>('track_lines')
-        .query()
-        .fetch();
-      setTrackLines(allTrackLines);
-    } catch (error) {
-      addNotification({ type: 'ERROR', message: `${error}` });
-    }
-  }
 
   async function createEntry() {
     try {
@@ -195,10 +119,10 @@ export default function Tracking() {
             <Text style={styles.textl}>Fat:</Text>
           </View>
           <View>
-            <Text style={styles.textl}>{calculatedMacros.calories}</Text>
-            <Text style={styles.textl}>{calculatedMacros.protein}</Text>
-            <Text style={styles.textl}>{calculatedMacros.carbs}</Text>
-            <Text style={styles.textl}>{calculatedMacros.fats}</Text>
+            <Text style={styles.textl}>{trackContext.macros.calories}</Text>
+            <Text style={styles.textl}>{trackContext.macros.protein}</Text>
+            <Text style={styles.textl}>{trackContext.macros.carbs}</Text>
+            <Text style={styles.textl}>{trackContext.macros.fats}</Text>
           </View>
         </View>
       </View>

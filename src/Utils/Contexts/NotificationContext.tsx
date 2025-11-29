@@ -9,7 +9,7 @@ import {
   NotificationType,
   NotificationWithId,
   NotificationContextType,
-} from './Models';
+} from '../Models';
 
 const NotificationContext = createContext<NotificationContextType>({
   notifications: [],

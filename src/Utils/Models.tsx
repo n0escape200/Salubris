@@ -2,6 +2,13 @@ import { notificationTypes } from './Constants';
 
 // ======  CLASSES =====
 
+export class MacroModel {
+  calories = 0;
+  protein = 0;
+  carbs = 0;
+  fats = 0;
+}
+
 // ======  END CLASSES ======
 
 // ======  TYPES ======

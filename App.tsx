@@ -4,8 +4,9 @@ import { View } from 'react-native';
 import Routes from './src/Routes';
 import Footer from './src/Components/Footer';
 import { navigationRef } from './src/Utils/NavigationRef';
-import { NotificationProvider } from './src/Utils/NotificationContext';
+import { NotificationProvider } from './src/Utils/Contexts/NotificationContext';
 import { Notifications } from './src/Components/Notifications';
+import { TrackingProvider } from './src/Utils/Contexts/TrackingContext';
 
 function AppContent() {
   return (
@@ -22,19 +23,21 @@ function AppContent() {
 
 export default function App() {
   return (
-    <NotificationProvider>
-      <SafeAreaProvider>
-        <SafeAreaView
-          style={{
-            flex: 1,
-            backgroundColor: 'black',
-            paddingHorizontal: 20,
-            paddingVertical: 10,
-          }}
-        >
-          <AppContent />
-        </SafeAreaView>
-      </SafeAreaProvider>
-    </NotificationProvider>
+    <TrackingProvider>
+      <NotificationProvider>
+        <SafeAreaProvider>
+          <SafeAreaView
+            style={{
+              flex: 1,
+              backgroundColor: 'black',
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+            }}
+          >
+            <AppContent />
+          </SafeAreaView>
+        </SafeAreaProvider>
+      </NotificationProvider>
+    </TrackingProvider>
   );
 }

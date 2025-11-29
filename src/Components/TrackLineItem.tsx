@@ -5,7 +5,7 @@ import { styles } from '../Utils/Styles';
 import { Pressable, Text, View } from 'react-native';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { useNotification } from '../Utils/NotificationContext';
+import { useNotification } from '../Utils/Contexts/NotificationContext';
 
 type TrackLineItemProps = {
   line: TrackLine;

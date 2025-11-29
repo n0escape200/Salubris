@@ -1,6 +1,6 @@
 import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { useNotification } from '../Utils/NotificationContext';
+import { useNotification } from '../Utils/Contexts/NotificationContext';
 
 export const Notifications = () => {
   const { notifications, removeNotification } = useNotification();
