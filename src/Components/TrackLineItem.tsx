@@ -10,7 +10,7 @@ import { useNotification } from '../Utils/Contexts/NotificationContext';
 type TrackLineItemProps = {
   line: TrackLine;
   index: number;
-  deleteTrackLine: (line: TrackLine) => Promise<void>;
+  deleteTrackLine?: (line: TrackLine) => Promise<void>;
 };
 
 export default function TrackLineItem({
@@ -28,7 +28,9 @@ export default function TrackLineItem({
 
   function handleDeleteLine() {
     try {
-      deleteTrackLine(line);
+      if (deleteTrackLine) {
+        deleteTrackLine(line);
+      }
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
     }

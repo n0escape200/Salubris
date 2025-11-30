@@ -69,30 +69,8 @@ export default function Tracking() {
       });
 
       setOpen(false);
-      setShouldUpdate(true);
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
-    }
-  }
-
-  function filterTodayLines() {
-    const today = new Date().toISOString().slice(0, 10);
-    const lines = trackLines.filter(line => line.date.slice(0, 10) === today);
-
-    setTodayLines(lines);
-  }
-
-  async function deleteTrackLine(line: TrackLine) {
-    try {
-      await database.write(async () => {
-        await line.markAsDeleted();
-      });
-
-      setTrackLines(prev => prev.filter(l => l.id !== line.id));
-
-      setShouldUpdate(true);
-    } catch (err) {
-      addNotification({ type: 'ERROR', message: `${err}` });
     }
   }
 
@@ -145,16 +123,11 @@ export default function Tracking() {
       </View>
 
       <ScrollView style={{ ...styles.container, padding: 10 }}>
-        {todayLines.length === 0 ? (
+        {trackContext.todayLines.length === 0 ? (
           <Text style={styles.textxl}>No data</Text>
         ) : (
-          todayLines.map((line, index) => (
-            <TrackLineItem
-              key={line.id}
-              index={index}
-              line={line}
-              deleteTrackLine={deleteTrackLine}
-            />
+          trackContext.todayLines.map((line, index) => (
+            <TrackLineItem key={line.id} index={index} line={line} />
           ))
         )}
       </ScrollView>
@@ -168,7 +141,6 @@ export default function Tracking() {
           setIsFocusedMass(false);
         }}
         onClose={() => {
-          setShouldUpdate(true);
           setOpen(false);
         }}
       >
@@ -178,7 +150,7 @@ export default function Tracking() {
             isFocused={isFocusedProducts}
             setIsFocused={setIsFocusedProducts}
             ref={autocompleteRef}
-            options={products}
+            options={trackContext.products}
             optionLabel="name"
             onChange={(value: ProductType) =>
               mapState(value, productForm, setProductForm)

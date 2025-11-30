@@ -1,18 +1,30 @@
-import { createContext, ReactNode, useEffect, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useEffect,
+  useState,
+  Dispatch,
+  SetStateAction,
+} from 'react';
 import Product, { ProductType } from '../../DB/Models/Product';
 import { MacroModel } from '../Models';
 import { useNotification } from './NotificationContext';
 import { database } from '../../DB/Database';
 import TrackLine from '../../DB/Models/TrackLine';
 
-export const TrackingContext = createContext({
-  macros: new MacroModel(),
-  products: Array<Product>(),
-  trackLines: Array<TrackLine>(),
-  todayLines: Array<TrackLine>(),
-  addProductToTracking: (_product: ProductType, _ammount: number) => {},
-  removeProductFromTracking: (_product: ProductType, _ammount: number) => {},
-});
+type TrackingContextType = {
+  macros: MacroModel;
+  products: Product[];
+  trackLines: TrackLine[];
+  todayLines: TrackLine[];
+  setUpdateLine: Dispatch<SetStateAction<boolean>>;
+  addProductToTracking: (_product: ProductType, _ammount: number) => void;
+  removeProductFromTracking: (_product: ProductType, _ammount: number) => void;
+};
+
+export const TrackingContext = createContext<TrackingContextType | undefined>(
+  undefined,
+);
 
 type TrackingProviderProps = {
   children: ReactNode;
@@ -24,6 +36,7 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   const [products, setProducts] = useState<Array<Product>>([]);
   const [trackLines, setTrackLines] = useState<Array<TrackLine>>([]);
   const [todayLines, setTodayLines] = useState<Array<TrackLine>>([]);
+  const [updateLines, setUpdateLine] = useState(true);
 
   function addProductToTracking(_product: ProductType, _ammount: number) {
     try {
@@ -94,11 +107,20 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   useEffect(() => {
     const initialSetup = async () => {
       await getProducts();
-      await getTrackLines();
-      getTodayLines();
     };
     initialSetup();
   }, []);
+
+  useEffect(() => {
+    const initialSetup = async () => {
+      await getTrackLines();
+      getTodayLines();
+    };
+    if (updateLines) {
+      initialSetup();
+      setUpdateLine(false);
+    }
+  }, [updateLines]);
 
   return (
     <TrackingContext.Provider
@@ -107,6 +129,7 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         products,
         trackLines,
         todayLines,
+        setUpdateLine,
         addProductToTracking,
         removeProductFromTracking,
       }}
