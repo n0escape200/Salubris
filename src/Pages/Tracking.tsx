@@ -97,10 +97,10 @@ export default function Tracking() {
             <Text style={styles.textl}>Fat:</Text>
           </View>
           <View>
-            <Text style={styles.textl}>{trackContext.macros.calories}</Text>
-            <Text style={styles.textl}>{trackContext.macros.protein}</Text>
-            <Text style={styles.textl}>{trackContext.macros.carbs}</Text>
-            <Text style={styles.textl}>{trackContext.macros.fats}</Text>
+            <Text style={styles.textl}>{trackContext?.macros.calories}</Text>
+            <Text style={styles.textl}>{trackContext?.macros.protein}</Text>
+            <Text style={styles.textl}>{trackContext?.macros.carbs}</Text>
+            <Text style={styles.textl}>{trackContext?.macros.fats}</Text>
           </View>
         </View>
       </View>
@@ -123,10 +123,10 @@ export default function Tracking() {
       </View>
 
       <ScrollView style={{ ...styles.container, padding: 10 }}>
-        {trackContext.todayLines.length === 0 ? (
+        {trackContext?.todayLines.length === 0 ? (
           <Text style={styles.textxl}>No data</Text>
         ) : (
-          trackContext.todayLines.map((line, index) => (
+          trackContext?.todayLines.map((line, index) => (
             <TrackLineItem key={line.id} index={index} line={line} />
           ))
         )}
@@ -150,7 +150,7 @@ export default function Tracking() {
             isFocused={isFocusedProducts}
             setIsFocused={setIsFocusedProducts}
             ref={autocompleteRef}
-            options={trackContext.products}
+            options={trackContext?.products || []}
             optionLabel="name"
             onChange={(value: ProductType) =>
               mapState(value, productForm, setProductForm)
