@@ -2,8 +2,13 @@ import { Image, Pressable, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
 import { useState } from 'react';
 import CustomModal from './CustomModal';
+import { ProductType } from '../DB/Models/Product';
 
-export default function ItemList() {
+type ItemListProps = {
+  product: ProductType;
+};
+
+export default function ItemList({ product }: ItemListProps) {
   const [isActive, setIsactive] = useState(false);
   return (
     <>
@@ -25,13 +30,11 @@ export default function ItemList() {
             height: 130,
           }}
         >
-          <Image
-            source={{ uri: 'https://picsum.photos/200/300' }}
-            style={{ borderRadius: 5, width: 130 }}
-          />
           <View>
             <View>
-              <Text style={styles.textxl}>Chicken</Text>
+              <Text style={styles.textxl}>
+                {product?.name || 'Product name'}
+              </Text>
               <View
                 style={{
                   display: 'flex',
@@ -41,7 +44,7 @@ export default function ItemList() {
                 }}
               >
                 <Text style={styles.textl}>Kcal:</Text>
-                <Text style={styles.textl}>999</Text>
+                <Text style={styles.textl}>{product?.calories || 0}</Text>
               </View>
               <View
                 style={{
@@ -52,7 +55,7 @@ export default function ItemList() {
                 }}
               >
                 <Text style={styles.textl}>Protein:</Text>
-                <Text style={styles.textl}>999</Text>
+                <Text style={styles.textl}>{product?.protein || 0}</Text>
               </View>
               <View
                 style={{
@@ -63,7 +66,7 @@ export default function ItemList() {
                 }}
               >
                 <Text style={styles.textl}>Carbs:</Text>
-                <Text style={styles.textl}>999</Text>
+                <Text style={styles.textl}>{product?.carbs || 0}</Text>
               </View>
               <View
                 style={{
@@ -74,7 +77,7 @@ export default function ItemList() {
                 }}
               >
                 <Text style={styles.textl}>Fats:</Text>
-                <Text style={styles.textl}>999</Text>
+                <Text style={styles.textl}>{product?.fats || 0}</Text>
               </View>
             </View>
           </View>

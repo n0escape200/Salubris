@@ -5,8 +5,11 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import Input from '../Components/Input';
 import Dropdown from '../Components/Dropdown';
 import ItemList from '../Components/ItemList';
+import { useContext } from 'react';
+import { TrackingContext } from '../Utils/Contexts/TrackingContext';
 
 export default function Products() {
+  const trackingContext = useContext(TrackingContext);
   return (
     <View style={styles.page}>
       <View style={{ display: 'flex', flexDirection: 'row', gap: 20 }}>
@@ -31,7 +34,9 @@ export default function Products() {
         style={[styles.container, { position: 'relative', padding: 10 }]}
       >
         <View style={{ gap: 10 }}>
-          <ItemList />
+          {trackingContext?.products.map((product, index) => {
+            return <ItemList key={index} product={product} />;
+          })}
         </View>
       </ScrollView>
     </View>
