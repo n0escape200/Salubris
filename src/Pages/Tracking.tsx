@@ -2,7 +2,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
-import { useContext, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import CustomModal from '../Components/CustomModal';
 import Autocomplete from '../Components/Autocomplete';
 import Input from '../Components/Input';
@@ -31,6 +31,10 @@ export default function Tracking() {
     fats: 0,
   });
   const [quantity, setQuantity] = useState({ value: '', unit: 'g' });
+
+  useEffect(() => {
+    console.log('context', trackContext);
+  }, [trackContext]);
 
   async function createEntry() {
     try {
@@ -66,6 +70,7 @@ export default function Tracking() {
           type: 'SUCCESS',
           message: `Track line was added successfully`,
         });
+        trackContext?.setUpdateLine(true);
       });
 
       setOpen(false);

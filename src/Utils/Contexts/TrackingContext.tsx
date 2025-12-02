@@ -72,7 +72,7 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         .get<Product>('products')
         .query()
         .fetch();
-      setProducts(allProducts);
+      setProducts(allProducts || []);
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
     }
@@ -84,42 +84,55 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         .get<TrackLine>('track_lines')
         .query()
         .fetch();
-      setTrackLines(allTrackLines);
+
+      const normalizedAll = Array.isArray(allTrackLines) ? allTrackLines : [];
+
+      // Use ISO date so split('T')[0] works predictably
+      const todayString = new Date().toISOString().split('T')[0];
+
+      const linesForToday = normalizedAll.filter(line => {
+        try {
+          // handle if line.date is Date or ISO string or other
+          const lineDateIso = new Date((line as any).date)
+            .toISOString()
+            .split('T')[0];
+          return lineDateIso === todayString;
+        } catch (e) {
+          // if parsing fails, exclude this line
+          return false;
+        }
+      });
+
+      // set both full list and today's filtered list
+      setTrackLines(normalizedAll);
+      setTodayLines(linesForToday);
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
-    }
-  }
-
-  function getTodayLines() {
-    try {
-      if (trackLines.length > 0) {
-        const todayString = new Date().toString();
-
-        const lines = trackLines.filter(line => line.date === todayString);
-
-        setTodayLines(lines);
-      }
-    } catch (error) {
-      addNotification({ type: 'ERROR', message: `${error}` });
+      setTrackLines([]);
+      setTodayLines([]);
     }
   }
 
   useEffect(() => {
     const initialSetup = async () => {
       await getProducts();
+      await getTrackLines();
     };
     initialSetup();
+    // run once on mount
   }, []);
 
   useEffect(() => {
-    const initialSetup = async () => {
+    // re-fetch track lines when updateLines is toggled
+    if (!updateLines) return;
+
+    const setup = async () => {
       await getTrackLines();
-      getTodayLines();
-    };
-    if (updateLines) {
-      initialSetup();
+      // reset the update trigger
       setUpdateLine(false);
-    }
+    };
+
+    setup();
   }, [updateLines]);
 
   return (
