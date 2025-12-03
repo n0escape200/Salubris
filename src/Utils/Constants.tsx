@@ -31,3 +31,5 @@ export const footerItems = [
 ];
 
 export const notificationTypes = ['ERROR', 'SUCCESS'] as const;
+
+export const foodApiUrl = 'https://api.nal.usda.gov/fdc/v1';

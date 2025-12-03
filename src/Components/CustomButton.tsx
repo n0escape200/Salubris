@@ -4,13 +4,15 @@ type CustomButtonProps = {
   label: string;
   color?: string;
   fontColor?: string;
+  fontSize?: number;
   innerShadow?: string;
   width?: number;
   onPress?: () => void;
 };
 
 export default function CustomButton(props: CustomButtonProps) {
-  const { label, color, fontColor, innerShadow, width, onPress } = props;
+  const { label, color, fontColor, fontSize, innerShadow, width, onPress } =
+    props;
   return (
     <Pressable
       style={({ pressed }) => [
@@ -46,7 +48,7 @@ export default function CustomButton(props: CustomButtonProps) {
           color: fontColor ? fontColor : 'black',
           fontWeight: 'bold',
           zIndex: 1,
-          fontSize: 20,
+          fontSize: fontSize ? fontSize : 20,
         }}
       >
         {label}

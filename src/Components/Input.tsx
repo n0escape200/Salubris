@@ -18,6 +18,7 @@ type InputProps = {
   onChange?: (value: string) => void;
   backgroundColor?: string;
   type?: 'number' | undefined;
+  onSubmit?: () => void;
 };
 
 export default forwardRef(function Input(
@@ -26,6 +27,7 @@ export default forwardRef(function Input(
     value: propValue = '',
     validate = false,
     onChange,
+    onSubmit,
     backgroundColor = '#1e1e1e',
     type,
   }: InputProps,
@@ -87,6 +89,7 @@ export default forwardRef(function Input(
           onChange?.(text);
           setIsValid(true);
         }}
+        onSubmitEditing={onSubmit}
       />
       <Animated.Text style={labelStyle}>{label}</Animated.Text>
     </View>
