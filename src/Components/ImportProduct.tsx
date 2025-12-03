@@ -4,6 +4,9 @@ import Input from './Input';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
 import axios from 'axios';
 import { foodApiUrl } from '../Utils/Constants';
+import Config from 'react-native-config';
+import { ScrollView, Text, View } from 'react-native';
+import { styles } from '../Utils/Styles';
 
 type ImportProductProps = {
   open: boolean;
@@ -13,10 +16,20 @@ type ImportProductProps = {
 export default function ImportProduct({ open, onClose }: ImportProductProps) {
   const { addNotification } = useNotification();
   const [product, setProduct] = useState('');
+  const [data, setData] = useState([]);
 
-  function handleProductSearch() {
+  async function handleProductSearch() {
     try {
-      axios.get(`${foodApiUrl}/foods/search?api_key=`);
+      await axios
+        .get(
+          `${foodApiUrl}/foods/search?api_key=Jowjo9bvwSDSSyFfVab8IuHna8SywQGuFbxAEkbL&query=${product.replaceAll(
+            ' ',
+            '%20',
+          )}`,
+        )
+        .then(data => {
+          setData(data.data.foods);
+        });
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
     }
@@ -33,6 +46,26 @@ export default function ImportProduct({ open, onClose }: ImportProductProps) {
         }}
         onSubmit={handleProductSearch}
       />
+      <ScrollView style={[styles.container, { marginTop: 20 }]}>
+        {data.length > 0 && (
+          <>
+            {data.map((product: any, index) => {
+              return (
+                <View
+                  key={index}
+                  style={{
+                    backgroundColor: '#727272ff',
+                    marginBottom: 20,
+                    padding: 5,
+                  }}
+                >
+                  <Text>{product.description}</Text>
+                </View>
+              );
+            })}
+          </>
+        )}
+      </ScrollView>
     </CustomModal>
   );
 }

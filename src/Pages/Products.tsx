@@ -14,59 +14,55 @@ export default function Products() {
   const trackingContext = useContext(TrackingContext);
   const [openImport, setOpenImport] = useState(false);
   return (
-    <>
-      <View style={styles.page}>
-        <View
+    <View style={styles.page}>
+      <View
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          gap: 20,
+          alignItems: 'center',
+        }}
+      >
+        <Text style={styles.textxl}>Products:</Text>
+        <Pressable
+          onPress={() => {}}
           style={{
-            display: 'flex',
-            flexDirection: 'row',
-            gap: 20,
-            alignItems: 'center',
+            backgroundColor: '#3a3a3aff',
+            padding: 3,
+            borderRadius: 50,
           }}
         >
-          <Text style={styles.textxl}>Products:</Text>
-          <Pressable
-            onPress={() => {}}
-            style={{
-              backgroundColor: '#3a3a3aff',
-              padding: 3,
-              borderRadius: 50,
-            }}
-          >
-            <FontAwesomeIcon size={20} color="#ffffffff" icon={faPlus} />
-          </Pressable>
-          <CustomButton
-            label="Import product"
-            fontSize={15}
-            width={150}
-            onPress={() => {
-              setOpenImport(true);
-            }}
-          />
-        </View>
-        <View style={styles.container}>
-          <Input label="Search" />
-          <Dropdown options={['test1', 'test2', 'test3', 'test4']} />
-        </View>
-
-        <ScrollView
-          style={[styles.container, { position: 'relative', padding: 10 }]}
-        >
-          <View style={{ gap: 10 }}>
-            {trackingContext?.products.map((product, index) => {
-              return <ItemList key={index} product={product} />;
-            })}
-          </View>
-        </ScrollView>
-      </View>
-      {openImport && (
-        <ImportProduct
-          open={openImport}
-          onClose={() => {
-            setOpenImport(false);
+          <FontAwesomeIcon size={20} color="#ffffffff" icon={faPlus} />
+        </Pressable>
+        <CustomButton
+          label="Import product"
+          fontSize={15}
+          width={150}
+          onPress={() => {
+            setOpenImport(true);
           }}
         />
-      )}
-    </>
+      </View>
+      <View style={styles.container}>
+        <Input label="Search" />
+        <Dropdown options={['test1', 'test2', 'test3', 'test4']} />
+      </View>
+
+      <ScrollView
+        style={[styles.container, { position: 'relative', padding: 10 }]}
+      >
+        <View style={{ gap: 10 }}>
+          {trackingContext?.products.map((product, index) => {
+            return <ItemList key={index} product={product} />;
+          })}
+        </View>
+      </ScrollView>
+      <ImportProduct
+        open={openImport}
+        onClose={() => {
+          setOpenImport(false);
+        }}
+      />
+    </View>
   );
 }
