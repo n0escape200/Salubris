@@ -38,5 +38,5 @@ export function getApiUrl(product: string): string {
   return `${foodApiUrl}/foods/search?api_key=Jowjo9bvwSDSSyFfVab8IuHna8SywQGuFbxAEkbL&query=${product.replaceAll(
     ' ',
     '%20',
-  )}&dataType=["Foundation"]`;
+  )}&dataType=Foundation`;
 }
