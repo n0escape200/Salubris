@@ -3,7 +3,7 @@ import CustomModal from './CustomModal';
 import Input from './Input';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
 import axios from 'axios';
-import { foodApiUrl } from '../Utils/Constants';
+import { foodApiUrl, getApiUrl } from '../Utils/Constants';
 import Config from 'react-native-config';
 import { ScrollView, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
@@ -20,16 +20,9 @@ export default function ImportProduct({ open, onClose }: ImportProductProps) {
 
   async function handleProductSearch() {
     try {
-      await axios
-        .get(
-          `${foodApiUrl}/foods/search?api_key=Jowjo9bvwSDSSyFfVab8IuHna8SywQGuFbxAEkbL&query=${product.replaceAll(
-            ' ',
-            '%20',
-          )}`,
-        )
-        .then(data => {
-          setData(data.data.foods);
-        });
+      await axios.get(getApiUrl(product)).then(data => {
+        setData(data.data.foods);
+      });
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
     }

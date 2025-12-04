@@ -33,3 +33,10 @@ export const footerItems = [
 export const notificationTypes = ['ERROR', 'SUCCESS'] as const;
 
 export const foodApiUrl = 'https://api.nal.usda.gov/fdc/v1';
+
+export function getApiUrl(product: string): string {
+  return `${foodApiUrl}/foods/search?api_key=Jowjo9bvwSDSSyFfVab8IuHna8SywQGuFbxAEkbL&query=${product.replaceAll(
+    ' ',
+    '%20',
+  )}&dataType=["Foundation"]`;
+}
