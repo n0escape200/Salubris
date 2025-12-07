@@ -147,18 +147,11 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   }
 
   useEffect(() => {
-    const initialSetup = async () => {
-      await getProducts();
-      await getTrackLines();
-    };
-    initialSetup();
-  }, []);
-
-  useEffect(() => {
     if (!updateLines) return;
 
     const setup = async () => {
       await getTrackLines();
+      await getProducts();
       setUpdateLine(false);
     };
 

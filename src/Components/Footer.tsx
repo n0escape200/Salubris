@@ -4,7 +4,6 @@ import { footerItems } from '../Utils/Constants';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { navigationRef } from '../Utils/NavigationRef';
 import { useEffect, useState } from 'react';
-import Vocabulary from '../Utils/Vocabulary';
 
 export default function Footer() {
   const [currentRoute, setCurrentRoute] = useState<string | undefined>(

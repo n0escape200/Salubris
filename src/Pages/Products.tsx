@@ -5,14 +5,77 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import Input from '../Components/Input';
 import Dropdown from '../Components/Dropdown';
 import ItemList from '../Components/ItemList';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { TrackingContext } from '../Utils/Contexts/TrackingContext';
 import CustomButton from '../Components/CustomButton';
 import ImportProduct from '../Components/ImportProduct';
+import CustomModal from '../Components/CustomModal';
+import Form from '../Components/Form';
+import Product, { ProductType } from '../DB/Models/Product';
+import { database } from '../DB/Database';
+import { useNotification } from '../Utils/Contexts/NotificationContext';
 
 export default function Products() {
+  const autocompleteRef = useRef<any>(null);
+  const { addNotification } = useNotification();
   const trackingContext = useContext(TrackingContext);
   const [openImport, setOpenImport] = useState(false);
+  const [openAdd, setOpenAdd] = useState(false);
+  const [productForm, setProductForm] = useState<ProductType>({
+    id: undefined,
+    name: '',
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fats: 0,
+  });
+  const [exportData, setExportData] = useState({
+    name: '',
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fats: 0,
+  });
+
+  useEffect(() => {
+    if (exportData.name !== '' && !openAdd) {
+      setOpenAdd(true);
+      setProductForm(prev => ({
+        ...prev,
+        name: exportData.name,
+        calories: exportData.calories,
+        protein: exportData.protein,
+        carbs: exportData.carbs,
+        fats: exportData.fats,
+      }));
+    }
+  }, [exportData]);
+
+  async function addProduct() {
+    try {
+      await database.write(async () => {
+        await database.get<Product>('products').create(p => {
+          p.name = productForm.name;
+          p.calories = productForm.calories;
+          p.protein = productForm.protein;
+          p.carbs = productForm.carbs;
+          p.fats = productForm.fats;
+        });
+        addNotification({
+          type: 'SUCCESS',
+          message: `${productForm.name} created successfully`,
+        });
+        trackingContext?.setUpdateLine(true);
+        setOpenAdd(false);
+      });
+    } catch (error) {
+      addNotification({
+        type: 'ERROR',
+        message: `${error}`,
+      });
+    }
+  }
+
   return (
     <View style={styles.page}>
       <View
@@ -25,7 +88,9 @@ export default function Products() {
       >
         <Text style={styles.textxl}>Products:</Text>
         <Pressable
-          onPress={() => {}}
+          onPress={() => {
+            setOpenAdd(true);
+          }}
           style={{
             backgroundColor: '#3a3a3aff',
             padding: 3,
@@ -62,7 +127,75 @@ export default function Products() {
         onClose={() => {
           setOpenImport(false);
         }}
+        setExportData={setExportData}
       />
+      <CustomModal
+        title="Add product"
+        open={openAdd}
+        childRef={autocompleteRef}
+        onClose={() => {
+          setOpenAdd(false);
+        }}
+      >
+        <Form
+          onSubmit={() => {
+            addProduct();
+          }}
+          onCancel={() => {
+            setOpenAdd(false);
+            setExportData({
+              name: '',
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fats: 0,
+            });
+            setProductForm({
+              id: undefined,
+              name: '',
+              calories: 0,
+              protein: 0,
+              carbs: 0,
+              fats: 0,
+            });
+          }}
+        >
+          <Input
+            label="Name"
+            value={productForm.name}
+            validate
+            onChange={v => {}}
+          />
+          <Input
+            label="Calories"
+            value={`${productForm.calories}`}
+            validate
+            type="number"
+            onChange={v => setProductForm(p => ({ ...p, calories: +v }))}
+          />
+          <Input
+            label="Protein"
+            value={`${productForm.protein}`}
+            validate
+            type="number"
+            onChange={v => setProductForm(p => ({ ...p, protein: +v }))}
+          />
+          <Input
+            label="Carbs"
+            value={`${productForm.carbs}`}
+            validate
+            type="number"
+            onChange={v => setProductForm(p => ({ ...p, carbs: +v }))}
+          />
+          <Input
+            label="Fats"
+            value={`${productForm.fats}`}
+            validate
+            type="number"
+            onChange={v => setProductForm(p => ({ ...p, fats: +v }))}
+          />
+        </Form>
+      </CustomModal>
     </View>
   );
 }

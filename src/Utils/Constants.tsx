@@ -20,10 +20,10 @@ export const footerItems = [
     label: Vocabulary.products,
     icon: faCarrot,
   },
-  {
-    label: Vocabulary.map,
-    icon: faMap,
-  },
+  // {
+  //   label: Vocabulary.map,
+  //   icon: faMap,
+  // },
   {
     label: Vocabulary.user,
     icon: faUser,
