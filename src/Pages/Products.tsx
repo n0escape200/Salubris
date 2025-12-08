@@ -1,23 +1,28 @@
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import {
+  faBarcode,
+  faFileImport,
+  faPlus,
+} from '@fortawesome/free-solid-svg-icons';
 import Input from '../Components/Input';
 import Dropdown from '../Components/Dropdown';
 import ItemList from '../Components/ItemList';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { TrackingContext } from '../Utils/Contexts/TrackingContext';
-import CustomButton from '../Components/CustomButton';
 import ImportProduct from '../Components/ImportProduct';
 import CustomModal from '../Components/CustomModal';
 import Form from '../Components/Form';
 import Product, { ProductType } from '../DB/Models/Product';
 import { database } from '../DB/Database';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
+import { useCameraPermission } from 'react-native-vision-camera';
 
 export default function Products() {
   const autocompleteRef = useRef<any>(null);
   const { addNotification } = useNotification();
+  const { hasPermission, requestPermission } = useCameraPermission();
   const trackingContext = useContext(TrackingContext);
   const [openImport, setOpenImport] = useState(false);
   const [openAdd, setOpenAdd] = useState(false);
@@ -76,6 +81,19 @@ export default function Products() {
     }
   }
 
+  async function handleOpenCamera() {
+    try {
+      if (!hasPermission) {
+        requestPermission();
+      }
+    } catch (error) {
+      addNotification({
+        type: 'ERROR',
+        message: `${error}`,
+      });
+    }
+  }
+
   return (
     <View style={styles.page}>
       <View
@@ -99,14 +117,30 @@ export default function Products() {
         >
           <FontAwesomeIcon size={20} color="#ffffffff" icon={faPlus} />
         </Pressable>
-        <CustomButton
-          label="Import product"
-          fontSize={15}
-          width={150}
+        <Pressable
           onPress={() => {
             setOpenImport(true);
           }}
-        />
+          style={{
+            backgroundColor: '#3a3a3aff',
+            padding: 7,
+            borderRadius: 15,
+          }}
+        >
+          <FontAwesomeIcon color="white" icon={faFileImport} />
+        </Pressable>
+        <Pressable
+          style={{
+            backgroundColor: '#3a3a3aff',
+            padding: 7,
+            borderRadius: 15,
+          }}
+          onPress={() => {
+            handleOpenCamera();
+          }}
+        >
+          <FontAwesomeIcon color="white" icon={faBarcode} />
+        </Pressable>
       </View>
       <View style={styles.container}>
         <Input label="Search" />
