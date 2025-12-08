@@ -84,7 +84,7 @@ export default function Products() {
   async function handleOpenCamera() {
     try {
       if (!hasPermission) {
-        requestPermission();
+        await requestPermission();
       }
     } catch (error) {
       addNotification({
