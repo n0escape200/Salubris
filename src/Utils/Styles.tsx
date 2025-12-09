@@ -15,7 +15,7 @@ export const styles = StyleSheet.create({
   footer: {
     backgroundColor: '#1c1c1c',
     position: 'absolute',
-    bottom: 34,
+    bottom: 0,
     left: 0,
     right: 0,
     borderRadius: 10,

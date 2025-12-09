@@ -45,7 +45,7 @@ export default function Footer() {
               <Text
                 style={{
                   color: currentRoute === item.label ? '#1c1c1c' : 'white',
-                  fontSize: 12,
+                  fontSize: 10,
                 }}
               >
                 {item.label}

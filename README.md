@@ -14,3 +14,14 @@ $ npm start -- --reset-cache
     (if you want to, run npm install again) (package is already OK - patch package ensure it stays OK)
     clean build gradle and all that then:
     rebuild and .... voilà !
+
+connect to phone
+1)Connect phone via USB once.
+2)Enable USB debugging on the phone.
+3)Run: adb tcpip 5555
+4)Find your phone’s IP address (e.g., in Wi-Fi settings).
+5)Connect wirelessly: adb connect <your-phone-ip>:5555
+6)Disconnect your cable — now you’re fully wireless.
+7)Then start your React Native project:
+npx react-native start
+npx react-native run-android

@@ -14,7 +14,7 @@ function AppContent() {
       <Notifications />
       <NavigationContainer ref={navigationRef}>
         <Routes />
-        <View style={{ height: 55 }} />
+        <View style={{ height: 50 }} />
       </NavigationContainer>
       <Footer />
     </>
@@ -30,8 +30,6 @@ export default function App() {
             style={{
               flex: 1,
               backgroundColor: 'black',
-              paddingHorizontal: 20,
-              paddingVertical: 10,
             }}
           >
             <AppContent />

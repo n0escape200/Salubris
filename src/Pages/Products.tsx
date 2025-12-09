@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
@@ -17,7 +17,12 @@ import Form from '../Components/Form';
 import Product, { ProductType } from '../DB/Models/Product';
 import { database } from '../DB/Database';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
-import { useCameraPermission } from 'react-native-vision-camera';
+import {
+  Camera,
+  useCameraDevice,
+  useCameraPermission,
+  useCodeScanner,
+} from 'react-native-vision-camera';
 
 export default function Products() {
   const autocompleteRef = useRef<any>(null);
@@ -41,7 +46,8 @@ export default function Products() {
     carbs: 0,
     fats: 0,
   });
-
+  const [openCamera, setOpenCamera] = useState(false);
+  const device = useCameraDevice('back');
   useEffect(() => {
     if (exportData.name !== '' && !openAdd) {
       setOpenAdd(true);
@@ -86,6 +92,10 @@ export default function Products() {
       if (!hasPermission) {
         await requestPermission();
       }
+      if (device == null) {
+        addNotification({ type: 'ERROR', message: 'No camera detected' });
+      }
+      setOpenCamera(true);
     } catch (error) {
       addNotification({
         type: 'ERROR',
@@ -93,6 +103,14 @@ export default function Products() {
       });
     }
   }
+
+  const codeScanner = useCodeScanner({
+    codeTypes: ['qr', 'ean-13'],
+    onCodeScanned: codes => {
+      console.log(`${codes[0].value}`);
+      setOpenCamera(false);
+    },
+  });
 
   return (
     <View style={styles.page}>
@@ -230,6 +248,14 @@ export default function Products() {
           />
         </Form>
       </CustomModal>
+      {device && openCamera && (
+        <Camera
+          style={StyleSheet.absoluteFill}
+          device={device}
+          isActive={openCamera}
+          codeScanner={codeScanner}
+        />
+      )}
     </View>
   );
 }
