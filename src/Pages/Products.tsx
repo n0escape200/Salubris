@@ -23,6 +23,7 @@ import {
   useCameraPermission,
   useCodeScanner,
 } from 'react-native-vision-camera';
+import axios from 'axios';
 
 export default function Products() {
   const autocompleteRef = useRef<any>(null);
@@ -104,11 +105,40 @@ export default function Products() {
     }
   }
 
+  let codesArray: string[] = [];
+
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13'],
-    onCodeScanned: codes => {
-      console.log(`${codes[0].value}`);
-      setOpenCamera(false);
+    onCodeScanned: async codes => {
+      const scannedCode = codes[0]?.value;
+      if (!scannedCode) return; // safety check
+
+      codesArray.push(scannedCode);
+
+      if (codesArray.length === 10) {
+        const freq: Record<string, number> = {};
+        let maxCount = 0;
+        let maxValue = '';
+
+        for (const code of codesArray) {
+          freq[code] = (freq[code] || 0) + 1;
+          if (freq[code] > maxCount) {
+            maxCount = freq[code];
+            maxValue = code;
+          }
+        }
+        console.log(maxValue);
+        await axios
+          .get(`https://world.openfoodfacts.net/api/v3/product/${maxValue}`)
+          .then(res => {
+            console.log(res);
+          })
+          .catch(err => {
+            console.log(err.response);
+            addNotification({ type: 'ERROR', message: `${err}` });
+          });
+        setOpenCamera(false);
+      }
     },
   });
 
