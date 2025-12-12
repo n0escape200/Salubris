@@ -24,6 +24,7 @@ import {
   useCodeScanner,
 } from 'react-native-vision-camera';
 import axios from 'axios';
+import { getLatestMacros } from '../Utils/Functions';
 
 export default function Products() {
   const autocompleteRef = useRef<any>(null);
@@ -129,12 +130,19 @@ export default function Products() {
         }
         console.log(maxValue);
         await axios
-          .get(`https://world.openfoodfacts.net/api/v3/product/${maxValue}`)
+          .get(`https://world.openfoodfacts.org/api/v2/product/${maxValue}`)
           .then(res => {
-            console.log(res);
+            const data = res.data.product;
+            console.log(getLatestMacros(data));
           })
           .catch(err => {
-            console.log(err.response);
+            if (err.response.data.status_verbose === 'product not found') {
+              addNotification({
+                type: 'ERROR',
+                message: `Product was not found`,
+              });
+              return;
+            }
             addNotification({ type: 'ERROR', message: `${err}` });
           });
         setOpenCamera(false);
