@@ -1,5 +1,6 @@
 import {
   Dimensions,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,7 +16,6 @@ import {
   faX,
 } from '@fortawesome/free-solid-svg-icons';
 import Input from '../Components/Input';
-import Dropdown from '../Components/Dropdown';
 import ItemList from '../Components/ItemList';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { TrackingContext } from '../Utils/Contexts/TrackingContext';
@@ -68,6 +68,7 @@ export default function Products() {
   });
 
   const [products, setProducts] = useState<Array<Product>>([]);
+  const [isScannig, setIsScanning] = useState(false);
   const device = useCameraDevice('back');
   const window = Dimensions.get('window');
 
@@ -84,7 +85,7 @@ export default function Products() {
     if (trackingContext?.products) {
       setProducts(trackingContext?.products);
     }
-  }, []);
+  }, [trackingContext]);
 
   /* -------------------- Database -------------------- */
 
@@ -128,7 +129,20 @@ export default function Products() {
   let codesArray: string[] = [];
 
   const codeScanner = useCodeScanner({
-    codeTypes: ['qr', 'ean-13'],
+    codeTypes: [
+      'qr',
+      'ean-8',
+      'ean-13',
+      'upc-e',
+      'upc-a',
+      'code-39',
+      'code-93',
+      'code-128',
+      'pdf-417',
+      'aztec',
+      'itf',
+      'codabar',
+    ],
     onCodeScanned: async codes => {
       const value = codes[0]?.value;
       if (!value) return;
@@ -166,6 +180,7 @@ export default function Products() {
         });
 
         setOpenAdd(true);
+        setIsScanning(true);
       } catch {
         addNotification({
           type: 'ERROR',
@@ -209,6 +224,26 @@ export default function Products() {
     });
 
   /* -------------------- Render -------------------- */
+
+  const resetData = () => {
+    setOpenAdd(false);
+    setIsScanning(false);
+    setExportData({
+      name: '',
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+    });
+    setProductForm({
+      id: undefined,
+      name: '',
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+    });
+  };
 
   return (
     <View style={styles.page}>
@@ -279,55 +314,82 @@ export default function Products() {
         title="Add product"
         open={openAdd}
         childRef={autocompleteRef}
-        onClose={() => setOpenAdd(false)}
+        onClose={resetData}
       >
-        <Form
-          onSubmit={addProduct}
-          onCancel={() => {
-            setOpenAdd(false);
-            setExportData({
-              name: '',
-              calories: 0,
-              protein: 0,
-              carbs: 0,
-              fats: 0,
-            });
-            setProductForm({
-              id: undefined,
-              name: '',
-              calories: 0,
-              protein: 0,
-              carbs: 0,
-              fats: 0,
-            });
-          }}
-        >
-          <Input label="Name" value={productForm.name} validate />
+        <Form onSubmit={addProduct} onCancel={resetData}>
+          <Input
+            label="Name"
+            value={productForm.name}
+            onChange={value => {
+              setProductForm(prev => ({ ...prev, name: value }));
+            }}
+            validate
+          />
           <Input
             label="Calories"
             value={`${productForm.calories}`}
+            onChange={value => {
+              setProductForm(prev => ({ ...prev, calories: +value }));
+            }}
             type="number"
             validate
           />
           <Input
             label="Protein"
             value={`${productForm.protein}`}
+            onChange={value => {
+              setProductForm(prev => ({ ...prev, protein: +value }));
+            }}
             type="number"
             validate
           />
           <Input
             label="Carbs"
             value={`${productForm.carbs}`}
+            onChange={value => {
+              setProductForm(prev => ({ ...prev, carbs: +value }));
+            }}
             type="number"
             validate
           />
           <Input
             label="Fats"
             value={`${productForm.fats}`}
+            onChange={value => {
+              setProductForm(prev => ({ ...prev, fats: +value }));
+            }}
             type="number"
             validate
           />
+          <Text style={{ color: 'white', fontSize: 15 }}>
+            The macros will be per 100g
+          </Text>
         </Form>
+        {isScannig && (
+          <View
+            style={{
+              backgroundColor: '#3a3a3a',
+              padding: 10,
+              borderRadius: 10,
+              marginTop: 20,
+            }}
+          >
+            <Text style={{ color: 'yellow' }}>IMPORTANT</Text>
+            <Text style={{ color: 'white' }}>
+              The data retrieved by scanning a product is not allways 100%
+              correct.
+            </Text>
+            <View style={{ display: 'flex', flexDirection: 'row', gap: 3 }}>
+              <Text style={{ color: 'white' }}>Data is imported from</Text>
+              <Text
+                style={{ color: '#2e7fe7ff' }}
+                onPress={() => Linking.openURL('https://fdc.nal.usda.gov')}
+              >
+                Open Food facts
+              </Text>
+            </View>
+          </View>
+        )}
       </CustomModal>
 
       {/* Camera overlay */}

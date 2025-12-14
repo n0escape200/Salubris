@@ -26,7 +26,6 @@ export default function Home() {
   const getCaloriesFromLines = async (lines: any[]) => {
     return Promise.all(
       lines.map(async line => {
-        console.log('line', line.product_id.id);
         const product = await database
           .get<Product>('products')
           .find(line.product_id.id)
@@ -87,10 +86,6 @@ export default function Home() {
     trackingContext?.thisWeekLines,
     trackingContext?.thisMonthLines,
   ]);
-
-  useEffect(() => {
-    console.log(trackingContext);
-  }, []);
 
   return (
     <View style={styles.page}>

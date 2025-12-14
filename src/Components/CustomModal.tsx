@@ -8,6 +8,7 @@ import {
   Dimensions,
   ViewStyle,
   ScrollView,
+  Text,
 } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
@@ -61,8 +62,15 @@ const normalizeRefs = (childRef?: AnyRef): RefObject<any>[] => {
 };
 
 export default function CustomModal(props: CustomModalProps) {
-  const { open, onClose, children, childRef, onPressOutside, overlayStyle } =
-    props;
+  const {
+    title,
+    open,
+    onClose,
+    children,
+    childRef,
+    onPressOutside,
+    overlayStyle,
+  } = props;
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current; // starts off-screen
 
   useEffect(() => {
@@ -116,9 +124,20 @@ export default function CustomModal(props: CustomModalProps) {
       <Animated.View
         style={[styles.modal, { transform: [{ translateY: slideAnim }] }]}
       >
-        <Pressable onPress={onClose} style={styles.closeButton}>
-          <FontAwesomeIcon color="white" size={20} icon={faXmark} />
-        </Pressable>
+        <View
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Text style={{ color: 'white', fontSize: 20 }}>
+            {title ? title : ''}
+          </Text>
+          <Pressable onPress={onClose} style={styles.closeButton}>
+            <FontAwesomeIcon color="white" size={20} icon={faXmark} />
+          </Pressable>
+        </View>
 
         {children}
       </Animated.View>

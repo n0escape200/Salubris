@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import Product from '../DB/Models/Product';
 import TrackLine from '../DB/Models/TrackLine';
 import { styles } from '../Utils/Styles';
@@ -6,31 +6,31 @@ import { Pressable, Text, View } from 'react-native';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
+import { database } from '../DB/Database';
+import { TrackingContext } from '../Utils/Contexts/TrackingContext';
 
 type TrackLineItemProps = {
   line: TrackLine;
   index: number;
-  deleteTrackLine?: (line: TrackLine) => Promise<void>;
 };
 
-export default function TrackLineItem({
-  line,
-  index,
-  deleteTrackLine,
-}: TrackLineItemProps) {
+export default function TrackLineItem({ line, index }: TrackLineItemProps) {
   const [product, setProduct] = useState<Product | null>(null);
   const { addNotification } = useNotification();
+  const trackingContext = useContext(TrackingContext);
   useEffect(() => {
     line.product_id.fetch().then(setProduct);
   }, [line]);
 
   if (!product) return null;
 
-  function handleDeleteLine() {
+  async function handleDeleteLine() {
     try {
-      if (deleteTrackLine) {
-        deleteTrackLine(line);
-      }
+      trackingContext?.removeTrackLine(line);
+      addNotification({
+        type: 'SUCCESS',
+        message: 'Track line deleted successfully',
+      });
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
     }
@@ -80,11 +80,7 @@ export default function TrackLineItem({
           </Text>
         </View>
       </View>
-      <Pressable
-        onPress={() => {
-          handleDeleteLine();
-        }}
-      >
+      <Pressable onPress={handleDeleteLine}>
         <FontAwesomeIcon size={20} color="#f12144ff" icon={faTrash} />
       </Pressable>
     </View>
