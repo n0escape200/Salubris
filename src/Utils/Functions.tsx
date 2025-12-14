@@ -16,7 +16,8 @@ export function mapState(
 }
 
 type Macros = {
-  kcal: number | null;
+  name: string;
+  kj: number | null;
   proteins: number | null;
   carbs: number | null;
   fat: number | null;
@@ -54,7 +55,8 @@ export function getLatestMacros(product: any): Macros | null {
     );
 
     return {
-      kcal: negative.energy ?? null,
+      name: product.product_name,
+      kj: negative.energy ?? null,
       fat: negative.fat ?? negative['saturated_fat'] ?? null,
       carbs: negative.sugars ?? null,
       proteins: positive.proteins ?? null,
@@ -62,7 +64,8 @@ export function getLatestMacros(product: any): Macros | null {
   } else {
     // 2021-style: values directly in data
     return {
-      kcal: data.energy ?? null,
+      name: product.product_name,
+      kj: data.energy ?? null,
       fat: data.saturated_fat ?? null,
       carbs: data.sugars ?? null,
       proteins: data.proteins ?? null,

@@ -7,6 +7,7 @@ import { navigationRef } from './src/Utils/NavigationRef';
 import { NotificationProvider } from './src/Utils/Contexts/NotificationContext';
 import { Notifications } from './src/Components/Notifications';
 import { TrackingProvider } from './src/Utils/Contexts/TrackingContext';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 function AppContent() {
   return (
@@ -23,19 +24,21 @@ function AppContent() {
 
 export default function App() {
   return (
-    <TrackingProvider>
-      <NotificationProvider>
-        <SafeAreaProvider>
-          <SafeAreaView
-            style={{
-              flex: 1,
-              backgroundColor: 'black',
-            }}
-          >
-            <AppContent />
-          </SafeAreaView>
-        </SafeAreaProvider>
-      </NotificationProvider>
-    </TrackingProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <TrackingProvider>
+        <NotificationProvider>
+          <SafeAreaProvider>
+            <SafeAreaView
+              style={{
+                flex: 1,
+                backgroundColor: 'black',
+              }}
+            >
+              <AppContent />
+            </SafeAreaView>
+          </SafeAreaProvider>
+        </NotificationProvider>
+      </TrackingProvider>
+    </GestureHandlerRootView>
   );
 }
