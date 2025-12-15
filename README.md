@@ -25,3 +25,9 @@ connect to phone
 7)Then start your React Native project:
 npx react-native start
 npx react-native run-android
+
+TS check for errors
+$ npx tsc --noEmit
+
+Build APK
+$ ./gradlew assembleRelease

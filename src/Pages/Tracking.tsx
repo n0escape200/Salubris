@@ -2,7 +2,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import CustomModal from '../Components/CustomModal';
 import Autocomplete from '../Components/Autocomplete';
 import Input from '../Components/Input';
@@ -19,9 +19,6 @@ export default function Tracking() {
   const { addNotification } = useNotification();
   const trackContext = useContext(TrackingContext);
   const [open, setOpen] = useState(false);
-  const [isFocusedProducts, setIsFocusedProducts] = useState(false);
-  const [isFocusedMass, setIsFocusedMass] = useState(false);
-  const autocompleteRef = useRef<any>(null);
   const [productForm, setProductForm] = useState<ProductType>({
     id: undefined,
     name: '',
@@ -102,10 +99,18 @@ export default function Tracking() {
             <Text style={styles.textl}>Fat:</Text>
           </View>
           <View>
-            <Text style={styles.textl}>{trackContext?.macros.calories}</Text>
-            <Text style={styles.textl}>{trackContext?.macros.protein}</Text>
-            <Text style={styles.textl}>{trackContext?.macros.carbs}</Text>
-            <Text style={styles.textl}>{trackContext?.macros.fats}</Text>
+            <Text style={styles.textl}>
+              {trackContext?.macros.calories.toFixed(2)}
+            </Text>
+            <Text style={styles.textl}>
+              {trackContext?.macros.protein.toFixed(2)}
+            </Text>
+            <Text style={styles.textl}>
+              {trackContext?.macros.carbs.toFixed(2)}
+            </Text>
+            <Text style={styles.textl}>
+              {trackContext?.macros.fats.toFixed(2)}
+            </Text>
           </View>
         </View>
       </View>
@@ -140,11 +145,6 @@ export default function Tracking() {
       <CustomModal
         title="Add product"
         open={open}
-        childRef={autocompleteRef}
-        onPressOutside={() => {
-          setIsFocusedProducts(false);
-          setIsFocusedMass(false);
-        }}
         onClose={() => {
           setOpen(false);
         }}
@@ -152,9 +152,6 @@ export default function Tracking() {
         <Form onSubmit={createEntry} onCancel={() => setOpen(false)}>
           <Autocomplete
             placeholder="Products"
-            isFocused={isFocusedProducts}
-            setIsFocused={setIsFocusedProducts}
-            ref={autocompleteRef}
             options={trackContext?.products || []}
             optionLabel="name"
             onChange={(value: ProductType) =>
@@ -208,9 +205,6 @@ export default function Tracking() {
             <View style={{ width: '20%' }}>
               <Autocomplete
                 placeholder="Unit"
-                ref={autocompleteRef}
-                isFocused={isFocusedMass}
-                setIsFocused={setIsFocusedMass}
                 initValue={quantity.unit}
                 options={['kg', 'g']}
                 onChange={v => setQuantity(q => ({ ...q, unit: v }))}

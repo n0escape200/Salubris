@@ -6,7 +6,6 @@ import { Pressable, Text, View } from 'react-native';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
-import { database } from '../DB/Database';
 import { TrackingContext } from '../Utils/Contexts/TrackingContext';
 
 type TrackLineItemProps = {
@@ -73,7 +72,11 @@ export default function TrackLineItem({ line, index }: TrackLineItemProps) {
           {`#${index + 1}`}
         </Text>
         <View>
-          <Text style={{ ...styles.textl, fontSize: 20 }}>{product.name}</Text>
+          <Text style={{ ...styles.textl, fontSize: 20 }}>
+            {product.name.length > 20
+              ? `${product.name.slice(0, 25)}...`
+              : product.name}
+          </Text>
           <Text style={{ fontSize: 12, color: 'white' }}>
             Quantity: {line.quantity}
             {line.unit}

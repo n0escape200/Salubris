@@ -28,7 +28,7 @@ export default forwardRef(function Input(
     validate = false,
     onChange,
     onSubmit,
-    backgroundColor = '#1e1e1e',
+    backgroundColor = 'black',
     type,
   }: InputProps,
   ref,

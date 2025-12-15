@@ -1,57 +1,32 @@
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import React, { useState, useMemo } from 'react';
 import {
-  useState,
-  useRef,
-  forwardRef,
-  useImperativeHandle,
-  useEffect,
-  useMemo,
-} from 'react';
-import { styles } from '../Utils/Styles';
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+  StyleSheet,
+} from 'react-native';
 
 type Option = string | Record<string, any>;
 
 type AutocompleteProps = {
   placeholder: string;
-  isFocused: boolean;
-  setIsFocused: React.Dispatch<React.SetStateAction<boolean>>;
   options: Option[];
   optionLabel?: string;
   onChange?: (value: any) => void;
-  initValue?: any;
+  initValue?: string;
 };
 
-const Autocomplete = forwardRef<View, AutocompleteProps>((props, ref) => {
-  const {
-    isFocused,
-    setIsFocused,
-    options,
-    optionLabel,
-    onChange,
-    placeholder,
-    initValue,
-  } = props;
-  const containerRef = useRef<View>(null);
-  const inputRef = useRef<TextInput>(null);
-  const [value, setValue] = useState('');
+export default function Autocomplete(props: AutocompleteProps) {
+  const { placeholder, options, optionLabel, onChange, initValue } = props;
 
-  useImperativeHandle(ref, () => containerRef.current!);
-  useEffect(() => {
-    if (initValue) {
-      setValue(initValue);
-    }
-    return () => {
-      setIsFocused(false);
-    };
-  }, []);
+  const [value, setValue] = useState(initValue ?? '');
+  const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    if (!isFocused && inputRef.current) inputRef.current.blur();
-  }, [isFocused]);
-
-  const getLabel = (opt: Option): string => {
+  const getLabel = (opt: Option) => {
     if (typeof opt === 'string') return opt;
-    if (optionLabel && typeof opt === 'object' && opt[optionLabel] != null)
+    if (optionLabel && opt?.[optionLabel] != null)
       return String(opt[optionLabel]);
     return '';
   };
@@ -63,60 +38,40 @@ const Autocomplete = forwardRef<View, AutocompleteProps>((props, ref) => {
   }, [value, options]);
 
   const handleSelect = (opt: Option) => {
-    if (onChange) {
-      onChange(opt);
-    }
-    setValue(getLabel(opt));
-    setIsFocused(false);
+    const label = getLabel(opt);
+    setValue(label);
+    setIsOpen(false);
+    onChange?.(opt);
   };
 
   return (
-    <View ref={containerRef}>
+    <View style={{ zIndex: 1000 }}>
       <TextInput
-        ref={inputRef}
-        style={{
-          borderBottomColor: 'white',
-          borderBottomWidth: 0.5,
-          color: 'white',
-        }}
+        style={styles.input}
         placeholder={placeholder}
-        placeholderTextColor="#525252ff"
-        onFocus={() => {
-          setIsFocused(true);
-        }}
+        placeholderTextColor="#b0b0b0"
         value={value}
-        onChangeText={setValue}
+        onFocus={() => setIsOpen(true)}
+        onBlur={() => setIsOpen(false)}
+        onChangeText={text => {
+          setValue(text);
+          setIsOpen(true);
+        }}
       />
 
-      {isFocused && filteredOptions.length > 0 && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 50,
-            left: 0,
-            right: 0,
-            maxHeight: 200,
-            backgroundColor: '#272727ff',
-            borderWidth: 1,
-            borderColor: '#636363ff',
-            zIndex: 9999,
-          }}
-        >
-          <ScrollView
-            style={{ maxHeight: 200 }}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled
-          >
-            {filteredOptions.map((opt, index) => (
-              <Pressable key={index} onPress={() => handleSelect(opt)}>
-                <Text
-                  style={[
-                    styles.textl,
-                    { borderColor: '#636363ff', borderWidth: 1, padding: 5 },
-                  ]}
-                >
-                  {getLabel(opt)}
-                </Text>
+      {isOpen && filteredOptions.length > 0 && (
+        <View style={styles.dropdown}>
+          <ScrollView keyboardShouldPersistTaps="always" nestedScrollEnabled>
+            {filteredOptions.map((opt, idx) => (
+              <Pressable
+                key={idx}
+                onPress={() => handleSelect(opt)}
+                style={({ pressed }) => [
+                  styles.option,
+                  pressed && { backgroundColor: '#1e1e1e' },
+                ]}
+              >
+                <Text style={styles.optionText}>{getLabel(opt)}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -124,6 +79,39 @@ const Autocomplete = forwardRef<View, AutocompleteProps>((props, ref) => {
       )}
     </View>
   );
-});
+}
 
-export default Autocomplete;
+const styles = StyleSheet.create({
+  input: {
+    borderBottomColor: '#ffffff80',
+    borderBottomWidth: 0.5,
+    color: 'white',
+    paddingVertical: 8,
+  },
+  dropdown: {
+    position: 'absolute',
+    top: 40,
+    left: 0,
+    right: 0,
+    maxHeight: 220,
+    backgroundColor: '#1f1f1f',
+    borderWidth: 1,
+    borderColor: '#bdbdbdff',
+    borderRadius: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+    zIndex: 1000,
+  },
+  option: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomColor: '#444',
+    borderBottomWidth: 0.5,
+  },
+  optionText: {
+    color: '#ffffff',
+    fontSize: 16,
+  },
+});

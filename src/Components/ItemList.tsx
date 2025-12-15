@@ -1,10 +1,10 @@
 import { Pressable, Text, View } from 'react-native';
 import { styles } from '../Utils/Styles';
-import Product, { ProductType } from '../DB/Models/Product';
+import Product from '../DB/Models/Product';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
-import { useContext, useEffect } from 'react';
+import { useContext } from 'react';
 import { database } from '../DB/Database';
 import { TrackingContext } from '../Utils/Contexts/TrackingContext';
 

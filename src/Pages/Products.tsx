@@ -289,6 +289,7 @@ export default function Products() {
               setProducts(trackingContext?.products || []);
             }
           }}
+          backgroundColor="#1c1c1c"
         />
         {/* <Dropdown options={['test1', 'test2', 'test3', 'test4']} /> */}
       </View>
@@ -310,12 +311,7 @@ export default function Products() {
       />
 
       {/* Add product modal */}
-      <CustomModal
-        title="Add product"
-        open={openAdd}
-        childRef={autocompleteRef}
-        onClose={resetData}
-      >
+      <CustomModal title="Add product" open={openAdd} onClose={resetData}>
         <Form onSubmit={addProduct} onCancel={resetData}>
           <Input
             label="Name"

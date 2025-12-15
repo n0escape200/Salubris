@@ -110,7 +110,6 @@ export default function ImportProduct({
       <Input
         label="Product"
         validate
-        type="number"
         value={product}
         onChange={value => {
           setProduct(value);

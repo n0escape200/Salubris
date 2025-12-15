@@ -1,4 +1,4 @@
-import { View, Text, Pressable } from 'react-native';
+import { Text, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
 
