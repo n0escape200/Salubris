@@ -15,7 +15,7 @@ import TrackLine from '../DB/Models/TrackLine';
 import TrackLineItem from '../Components/TrackLineItem';
 import { TrackingContext } from '../Utils/Contexts/TrackingContext';
 
-export default function Tracking() {
+export default function Tracking({ children }: { children?: React.ReactNode }) {
   const { addNotification } = useNotification();
   const trackContext = useContext(TrackingContext);
   const [open, setOpen] = useState(false);
@@ -29,52 +29,72 @@ export default function Tracking() {
   });
   const [quantity, setQuantity] = useState({ value: '', unit: 'g' });
 
-  useEffect(() => {
-    console.log('context', trackContext);
-  }, [trackContext]);
-
   async function createEntry() {
     try {
       await database.write(async () => {
-        let product;
+        // Create or use the product info from the form
+        const productData = {
+          name: productForm.name,
+          calories: productForm.calories,
+          protein: productForm.protein,
+          carbs: productForm.carbs,
+          fats: productForm.fats,
+        };
 
-        if (productForm.id) {
-          product = await database
-            .get<Product>('products')
-            .find(productForm.id);
-        } else {
-          product = await database.get<Product>('products').create(p => {
-            p.name = productForm.name;
-            p.calories = productForm.calories;
-            p.protein = productForm.protein;
-            p.carbs = productForm.carbs;
-            p.fats = productForm.fats;
+        // Optionally, save the product if it has a name and doesn't exist
+        if (!productForm.id && productForm.name.trim() !== '') {
+          await database.get<Product>('products').create(p => {
+            p.name = productData.name;
+            p.calories = productData.calories;
+            p.protein = productData.protein;
+            p.carbs = productData.carbs;
+            p.fats = productData.fats;
           });
           addNotification({
             type: 'SUCCESS',
-            message: `${product.name} created successfully`,
+            message: `${productData.name} saved successfully`,
           });
         }
 
+        // Create a track line using the nutritional info directly
         await database.get<TrackLine>('track_lines').create(trackLine => {
           trackLine.date = new Date().toISOString();
-          trackLine.quantity = +quantity.value;
+          trackLine.quantity = +quantity.value || 0;
           trackLine.unit = quantity.unit;
-          trackLine.product_id.set(product);
+          trackLine.name = productData.name;
+          trackLine.calories = productData.calories;
+          trackLine.protein = productData.protein;
+          trackLine.carbs = productData.carbs;
+          trackLine.fats = productData.fats;
         });
 
         addNotification({
           type: 'SUCCESS',
-          message: `Track line was added successfully`,
+          message: `Track line added successfully`,
         });
+
         trackContext?.setUpdateLine(true);
       });
 
       setOpen(false);
+      // Reset form after adding
+      setProductForm({
+        id: undefined,
+        name: '',
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fats: 0,
+      });
+      setQuantity({ value: '', unit: 'g' });
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
     }
   }
+
+  useEffect(() => {
+    console.log('context', trackContext);
+  }, [trackContext]);
 
   return (
     <View style={styles.page}>
@@ -145,9 +165,7 @@ export default function Tracking() {
       <CustomModal
         title="Add product"
         open={open}
-        onClose={() => {
-          setOpen(false);
-        }}
+        onClose={() => setOpen(false)}
       >
         <Form onSubmit={createEntry} onCancel={() => setOpen(false)}>
           <Autocomplete
@@ -213,6 +231,8 @@ export default function Tracking() {
           </View>
         </Form>
       </CustomModal>
+
+      {children}
     </View>
   );
 }

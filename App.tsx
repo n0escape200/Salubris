@@ -8,8 +8,51 @@ import { NotificationProvider } from './src/Utils/Contexts/NotificationContext';
 import { Notifications } from './src/Components/Notifications';
 import { TrackingProvider } from './src/Utils/Contexts/TrackingContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Database } from '@nozbe/watermelondb';
+import { useEffect } from 'react';
+import { database } from './src/DB/Database';
+
+export async function backfillTrackLines(database: Database) {
+  await database.write(async () => {
+    // Fetch all track lines
+    const trackLines: any = await database.get('track_lines').query().fetch();
+
+    for (const line of trackLines) {
+      // Only process lines that have product_id
+      if (!('product_id' in line)) continue;
+
+      try {
+        const product: any = await database
+          .get('products')
+          .find(line.product_id);
+
+        if (!product) {
+          console.warn(`Product not found for line ${line.id}`);
+          continue;
+        }
+
+        // Update the track line with name and macros
+        await line.update((l: any) => {
+          l.name = product.name;
+          l.calories = product.calories;
+          l.protein = product.protein;
+          l.carbs = product.carbs;
+          l.fats = product.fats;
+
+          // Remove the old product_id field
+          delete l.product_id;
+        });
+      } catch (error) {
+        console.warn(`Failed to backfill line ${line.id}:`, error);
+      }
+    }
+  });
+}
 
 function AppContent() {
+  useEffect(() => {
+    backfillTrackLines(database);
+  }, []);
   return (
     <>
       <Notifications />

@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const databaseSchema = appSchema({
-  version: 1,
+  version: 3,
   tables: [
     tableSchema({
       name: 'products',
@@ -19,7 +19,11 @@ export const databaseSchema = appSchema({
         { name: 'date', type: 'string' },
         { name: 'quantity', type: 'number' },
         { name: 'unit', type: 'string' },
-        { name: 'product_id', type: 'string' },
+        { name: 'name', type: 'string' },
+        { name: 'calories', type: 'number' },
+        { name: 'protein', type: 'number' },
+        { name: 'carbs', type: 'number' },
+        { name: 'fats', type: 'number' },
       ],
     }),
   ],

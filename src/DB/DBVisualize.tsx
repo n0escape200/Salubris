@@ -7,17 +7,18 @@ import { useEffect, useState } from 'react';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
 import { styles } from '../Utils/Styles';
 import TrackLine from './Models/TrackLine';
-type DBVIsualizeProps = {
+
+type DBVisualizeProps = {
   open: boolean;
   onClose: () => void;
 };
 
-export default function DBVIsualize(props: DBVIsualizeProps) {
+export default function DBVisualize(props: DBVisualizeProps) {
   const { open, onClose } = props;
   const [products, setProducts] = useState<Product[]>([]);
-  const { addNotification } = useNotification();
-  const [tab, setTab] = useState('products');
   const [trackLines, setTrackLines] = useState<TrackLine[]>([]);
+  const [tab, setTab] = useState('products');
+  const { addNotification } = useNotification();
 
   async function getProducts() {
     try {
@@ -33,7 +34,7 @@ export default function DBVIsualize(props: DBVIsualizeProps) {
 
   async function getTrackLines() {
     try {
-      let allTrackLines = await database
+      const allTrackLines = await database
         .get<TrackLine>('track_lines')
         .query()
         .fetch();
@@ -47,14 +48,11 @@ export default function DBVIsualize(props: DBVIsualizeProps) {
     getProducts();
     getTrackLines();
   }, []);
+
   return (
-    <CustomModal title="Database" open={open} onClose={() => onClose()}>
+    <CustomModal title="Database" open={open} onClose={onClose}>
       <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
-        <Pressable
-          onPress={() => {
-            setTab('products');
-          }}
-        >
+        <Pressable onPress={() => setTab('products')}>
           <Text
             style={[
               styles.textl,
@@ -69,11 +67,7 @@ export default function DBVIsualize(props: DBVIsualizeProps) {
             Products
           </Text>
         </Pressable>
-        <Pressable
-          onPress={() => {
-            setTab('trackline');
-          }}
-        >
+        <Pressable onPress={() => setTab('trackline')}>
           <Text
             style={[
               styles.textl,
@@ -89,14 +83,28 @@ export default function DBVIsualize(props: DBVIsualizeProps) {
           </Text>
         </Pressable>
       </View>
+
       {tab === 'products' && (
         <Table
           header={['name', 'calories', 'protein', 'carbs', 'fats']}
           options={products}
         />
       )}
+
       {tab === 'trackline' && (
-        <Table header={['date', 'quantity', 'unit']} options={trackLines} />
+        <Table
+          header={[
+            `name`,
+            'date',
+            'quantity',
+            'unit',
+            'calories',
+            'protein',
+            'carbs',
+            'fats',
+          ]}
+          options={trackLines}
+        />
       )}
     </CustomModal>
   );

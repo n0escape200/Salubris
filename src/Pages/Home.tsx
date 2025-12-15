@@ -5,13 +5,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faUser } from '@fortawesome/free-solid-svg-icons/faUser';
 import { LineChart } from 'react-native-chart-kit';
 import { TrackingContext } from '../Utils/Contexts/TrackingContext';
-import { useNotification } from '../Utils/Contexts/NotificationContext';
-import { database } from '../DB/Database';
-import { Q } from '@nozbe/watermelondb';
-import Product from '../DB/Models/Product';
 
 export default function Home() {
-  const { addNotification } = useNotification();
   const [chartWidth, setChartWidth] = useState(0);
   const [todayCalories, setTodayCalories] = useState(0);
   const [weeklyCalories, setWeeklyCalories] = useState<number[]>(
@@ -22,34 +17,24 @@ export default function Home() {
   );
   const trackingContext = useContext(TrackingContext);
 
-  // Get calories of any track lines
-  const getCaloriesFromLines = async (lines: any[]) => {
-    return Promise.all(
-      lines.map(async line => {
-        const product = await database
-          .get<Product>('products')
-          .find(line.product_id.id)
-          .catch(() => null);
-
-        if (!product) return 0;
-
-        const factor =
-          (line.unit !== 'g' ? line.quantity * 1000 : line.quantity) / 100;
-
-        return product.calories * factor;
-      }),
-    );
+  // Calculate total calories from a track line array
+  const calculateCalories = (lines: any[]) => {
+    return lines.map(line => {
+      const factor =
+        line.unit === 'g' ? line.quantity / 100 : (line.quantity * 1000) / 100;
+      return line.calories * factor;
+    });
   };
 
-  const calculateCaloriesToday = async () => {
+  const calculateCaloriesToday = () => {
     if (!trackingContext) return;
-    const calories = await getCaloriesFromLines(trackingContext.todayLines);
+    const calories = calculateCalories(trackingContext.todayLines);
     setTodayCalories(calories.reduce((sum, val) => sum + val, 0));
   };
 
-  const calculateWeeklyCalories = async () => {
+  const calculateWeeklyCalories = () => {
     if (!trackingContext) return;
-    const calories = await getCaloriesFromLines(trackingContext.thisWeekLines);
+    const calories = calculateCalories(trackingContext.thisWeekLines);
     const arr = new Array(7).fill(0);
 
     trackingContext.thisWeekLines.forEach((line, i) => {
@@ -61,10 +46,9 @@ export default function Home() {
     setWeeklyCalories(arr);
   };
 
-  // Monthly calories chart
-  const calculateMonthlyCalories = async () => {
+  const calculateMonthlyCalories = () => {
     if (!trackingContext) return;
-    const calories = await getCaloriesFromLines(trackingContext.thisMonthLines);
+    const calories = calculateCalories(trackingContext.thisMonthLines);
     const arr = new Array(12).fill(0);
 
     trackingContext.thisMonthLines.forEach((line, i) => {
@@ -106,7 +90,6 @@ export default function Home() {
         {/* WEEKLY CHART */}
         <View style={styles.container}>
           <Text style={styles.textxl}>Progress for the week:</Text>
-
           <View
             style={{ width: '100%' }}
             onLayout={event => setChartWidth(event.nativeEvent.layout.width)}

@@ -1,5 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
-import Product from '../DB/Models/Product';
+import { useContext } from 'react';
 import TrackLine from '../DB/Models/TrackLine';
 import { styles } from '../Utils/Styles';
 import { Pressable, Text, View } from 'react-native';
@@ -14,18 +13,12 @@ type TrackLineItemProps = {
 };
 
 export default function TrackLineItem({ line, index }: TrackLineItemProps) {
-  const [product, setProduct] = useState<Product | null>(null);
   const { addNotification } = useNotification();
   const trackingContext = useContext(TrackingContext);
-  useEffect(() => {
-    line.product_id.fetch().then(setProduct);
-  }, [line]);
-
-  if (!product) return null;
 
   async function handleDeleteLine() {
     try {
-      trackingContext?.removeTrackLine(line);
+      await trackingContext?.removeTrackLine(line);
       addNotification({
         type: 'SUCCESS',
         message: 'Track line deleted successfully',
@@ -73,9 +66,11 @@ export default function TrackLineItem({ line, index }: TrackLineItemProps) {
         </Text>
         <View>
           <Text style={{ ...styles.textl, fontSize: 20 }}>
-            {product.name.length > 20
-              ? `${product.name.slice(0, 25)}...`
-              : product.name}
+            {line.name
+              ? line.name.length > 20
+                ? `${line.name.slice(0, 25)}...`
+                : line.name
+              : ''}
           </Text>
           <Text style={{ fontSize: 12, color: 'white' }}>
             Quantity: {line.quantity}

@@ -21,10 +21,10 @@ type TrackingContextType = {
   thisWeekLines: TrackLine[];
   thisMonthLines: TrackLine[];
   setUpdateLine: Dispatch<SetStateAction<boolean>>;
-  addProductToTracking: (_product: ProductType, _ammount: number) => void;
-  removeProductFromTracking: (_product: ProductType, _ammount: number) => void;
+  addProductToTracking: (_product: ProductType, _amount: number) => void;
+  removeProductFromTracking: (_product: ProductType, _amount: number) => void;
   removeProduct: (_product: Product) => Promise<number>;
-  removeTrackLine: (_trakcLine: TrackLine) => void;
+  removeTrackLine: (_trackLine: TrackLine) => void;
 };
 
 export const TrackingContext = createContext<TrackingContextType | undefined>(
@@ -45,8 +45,8 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   const [thisWeekLines, setThisWeekLines] = useState<TrackLine[]>([]);
   const [updateLines, setUpdateLine] = useState(true);
 
-  function addProductToTracking(_product: ProductType, _ammount: number) {
-    const factor = _ammount / 100;
+  function addProductToTracking(_product: ProductType, _amount: number) {
+    const factor = _amount / 100;
     setMacros(prev => ({
       calories: prev.calories + _product.calories * factor,
       protein: prev.protein + _product.protein * factor,
@@ -55,8 +55,8 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
     }));
   }
 
-  function removeProductFromTracking(_product: ProductType, _ammount: number) {
-    const factor = _ammount / 100;
+  function removeProductFromTracking(_product: ProductType, _amount: number) {
+    const factor = _amount / 100;
     setMacros(prev => ({
       calories: prev.calories - _product.calories * factor,
       protein: prev.protein - _product.protein * factor,
@@ -90,11 +90,9 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
 
-      // Filter lines
-      const linesForToday = normalizedAll.filter(line => {
-        const d = new Date(line.date);
-        return d.toISOString().split('T')[0] === todayString;
-      });
+      const linesForToday = normalizedAll.filter(
+        line => line.date.split('T')[0] === todayString,
+      );
 
       const linesForThisMonth = normalizedAll.filter(line => {
         const d = new Date(line.date);
@@ -117,25 +115,17 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
       setThisWeekLines(linesForThisWeek);
       setThisMonthLines(linesForThisMonth);
 
-      // Compute macros for today asynchronously
-      const todayMacros = await linesForToday.reduce<Promise<MacroModel>>(
-        async (accP, line) => {
-          const acc = await accP;
-          try {
-            const product = await line.product_id.fetch(); // fetch related product
-            const factor = line.quantity / 100;
-            return {
-              calories: acc.calories + product.calories * factor,
-              protein: acc.protein + product.protein * factor,
-              carbs: acc.carbs + product.carbs * factor,
-              fats: acc.fats + product.fats * factor,
-            };
-          } catch {
-            return acc;
-          }
-        },
-        Promise.resolve({ calories: 0, protein: 0, carbs: 0, fats: 0 }),
-      );
+      // Compute today's macros
+      const todayMacros = linesForToday.reduce<MacroModel>((acc, line) => {
+        if (!line) return acc;
+        const factor = line.quantity / 100;
+        return {
+          calories: acc.calories + (line.calories || 0) * factor,
+          protein: acc.protein + (line.protein || 0) * factor,
+          carbs: acc.carbs + (line.carbs || 0) * factor,
+          fats: acc.fats + (line.fats || 0) * factor,
+        };
+      }, new MacroModel());
 
       setMacros(todayMacros);
     } catch (error) {
@@ -150,42 +140,24 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   async function removeProduct(_product: Product): Promise<number> {
     try {
       return await database.write(async () => {
-        const trackLinesCollection = database.get('track_lines');
-        const relatedTrackLines = await trackLinesCollection
-          .query(Q.where('product_id', _product.id))
-          .fetch();
-
-        if (relatedTrackLines.length > 0) return 2;
-
         const productCollection = database.get<Product>('products');
         const productRecord = await productCollection.find(_product.id);
         await productRecord.markAsDeleted();
 
         setProducts(prev => prev.filter(prod => prod.id !== _product.id));
-        return 1;
+        return 1; // success
       });
     } catch (error) {
       console.error('Error deleting product:', error);
-      return 0;
+      return 0; // failure
     }
   }
 
   async function removeTrackLine(_trackLine: TrackLine) {
     try {
-      // Fetch product data safely OUTSIDE the write block
-      const product = await _trackLine.product_id.fetch();
-      const productData = {
-        calories: product.calories,
-        protein: product.protein,
-        carbs: product.carbs,
-        fats: product.fats,
-      };
-
       await database.write(async () => {
-        // Delete only the TrackLine
         await _trackLine.markAsDeleted();
 
-        // Update all relevant states
         setTrackLines(prev => prev.filter(line => line.id !== _trackLine.id));
         setTodayLines(prev => prev.filter(line => line.id !== _trackLine.id));
         setThisWeekLines(prev =>
@@ -195,16 +167,13 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
           prev.filter(line => line.id !== _trackLine.id),
         );
 
-        // Update macros for today
-        setMacros(prev => {
-          const factor = _trackLine.quantity / 100;
-          return {
-            calories: prev.calories - productData.calories * factor,
-            protein: prev.protein - productData.protein * factor,
-            carbs: prev.carbs - productData.carbs * factor,
-            fats: prev.fats - productData.fats * factor,
-          };
-        });
+        const factor = _trackLine.quantity / 100;
+        setMacros(prev => ({
+          calories: prev.calories - (_trackLine.calories || 0) * factor,
+          protein: prev.protein - (_trackLine.protein || 0) * factor,
+          carbs: prev.carbs - (_trackLine.carbs || 0) * factor,
+          fats: prev.fats - (_trackLine.fats || 0) * factor,
+        }));
       });
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
