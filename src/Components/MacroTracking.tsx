@@ -95,8 +95,6 @@ export default function MacroTracking() {
   const trackContext = useContext(TrackingContext);
   return (
     <View style={styles.page}>
-      <Text style={styles.textxl}>Calories consumed today</Text>
-
       <View style={styles.container}>
         <Text
           style={{
