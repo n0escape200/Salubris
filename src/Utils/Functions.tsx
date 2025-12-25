@@ -1,3 +1,7 @@
+import { Q } from '@nozbe/watermelondb';
+import { database } from '../DB/Database';
+import AccountSettings from '../DB/Models/AccountSettings';
+
 export function mapState(
   data: Record<string, any>,
   state: Record<string, any>,
@@ -71,4 +75,29 @@ export function getLatestMacros(product: any): Macros | null {
       proteins: data.proteins ?? null,
     };
   }
+}
+
+export async function checkSetting(
+  tableName: string,
+  field: string,
+  value: string,
+) {
+  if (!field) {
+    return;
+  }
+
+  await database.write(async () => {
+    const settingsCollection = database.collections.get<any>(tableName);
+
+    const existing = await settingsCollection
+      .query(Q.where('field', field))
+      .fetch();
+
+    if (existing.length === 0) {
+      await settingsCollection.create(setting => {
+        setting.field = field;
+        setting.value = value;
+      });
+    }
+  });
 }

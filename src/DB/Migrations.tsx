@@ -1,4 +1,5 @@
 import { schemaMigrations } from '@nozbe/watermelondb/Schema/migrations';
+import { createTable } from '@nozbe/watermelondb/Schema/migrations';
 
 export const migrations = schemaMigrations({
   migrations: [
@@ -25,6 +26,13 @@ export const migrations = schemaMigrations({
           table: 'track_lines',
           columns: [{ name: 'name', type: 'string' }],
         },
+        createTable({
+          name: 'account_settings',
+          columns: [
+            { name: 'field', type: 'string' },
+            { name: 'value', type: 'string' },
+          ],
+        }),
       ],
     },
   ],

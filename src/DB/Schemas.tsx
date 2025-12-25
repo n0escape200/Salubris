@@ -26,5 +26,12 @@ export const databaseSchema = appSchema({
         { name: 'fats', type: 'number' },
       ],
     }),
+    tableSchema({
+      name: 'account_settings',
+      columns: [
+        { name: 'field', type: 'string' },
+        { name: 'value', type: 'string' },
+      ],
+    }),
   ],
 });

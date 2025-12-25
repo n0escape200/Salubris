@@ -3,6 +3,13 @@ import { styles } from '../Utils/Styles';
 import MacroTracking from '../Components/MacroTracking';
 import TabSelect from '../Components/TabSelect';
 import { useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import {
+  faFire,
+  faGlassWater,
+  faPersonWalking,
+} from '@fortawesome/free-solid-svg-icons';
+import WaterTracking from '../Components/WaterTracking';
 
 export default function Tracking() {
   const [page, setPage] = useState(1);
@@ -11,7 +18,7 @@ export default function Tracking() {
       case 1:
         return <MacroTracking />;
       case 2:
-        return <View></View>;
+        return <WaterTracking />;
       case 3:
         return <View></View>;
       default:
@@ -21,7 +28,11 @@ export default function Tracking() {
   return (
     <View style={styles.page}>
       <TabSelect
-        options={['Macros', 'Water', 'Steps']}
+        options={[
+          { icon: <FontAwesomeIcon icon={faFire} />, label: 'Macros' },
+          { icon: <FontAwesomeIcon icon={faGlassWater} />, label: 'Water' },
+          { icon: <FontAwesomeIcon icon={faPersonWalking} />, label: 'Steps' },
+        ]}
         page={page}
         setPage={setPage}
       />

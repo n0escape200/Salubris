@@ -4,6 +4,7 @@ import { databaseSchema } from './Schemas';
 import Product from './Models/Product';
 import TrackLine from './Models/TrackLine';
 import { migrations } from './Migrations';
+import AccountSettings from './Models/AccountSettings';
 
 const adapter = new SQLiteAdapter({
   schema: databaseSchema,
@@ -12,5 +13,5 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [Product, TrackLine],
+  modelClasses: [Product, TrackLine, AccountSettings],
 });

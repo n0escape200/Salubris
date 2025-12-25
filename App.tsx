@@ -8,11 +8,18 @@ import { NotificationProvider } from './src/Utils/Contexts/NotificationContext';
 import { Notifications } from './src/Components/Notifications';
 import { TrackingProvider } from './src/Utils/Contexts/TrackingContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Database } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
 import { useEffect } from 'react';
 import { database } from './src/DB/Database';
+import { checkSetting } from './src/Utils/Functions';
 
-export async function backfillTrackLines(database: Database) {
+async function initSettings() {
+  await checkSetting('account_settings', 'smallWater', '100');
+  await checkSetting('account_settings', 'mediumWater', '250');
+  await checkSetting('account_settings', 'largeWater', '500');
+}
+
+async function backfillTrackLines(database: Database) {
   await database.write(async () => {
     // Fetch all track lines
     const trackLines: any = await database.get('track_lines').query().fetch();
@@ -52,6 +59,7 @@ export async function backfillTrackLines(database: Database) {
 function AppContent() {
   useEffect(() => {
     backfillTrackLines(database);
+    initSettings();
   }, []);
   return (
     <>
