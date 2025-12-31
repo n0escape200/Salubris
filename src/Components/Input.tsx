@@ -4,7 +4,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import { TextInput, View } from 'react-native';
+import { TextInput, TextInputSubmitEditingEvent, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -18,7 +18,7 @@ type InputProps = {
   onChange?: (value: string) => void;
   backgroundColor?: string;
   type?: 'number' | undefined;
-  onSubmit?: () => void;
+  onSubmit?: (e: TextInputSubmitEditingEvent) => void;
 };
 
 export default forwardRef(function Input(
@@ -89,7 +89,12 @@ export default forwardRef(function Input(
           onChange?.(text);
           setIsValid(true);
         }}
-        onSubmitEditing={onSubmit}
+        onSubmitEditing={e => {
+          if (onSubmit) {
+            onSubmit(e);
+          }
+          setValue('');
+        }}
       />
       <Animated.Text style={labelStyle}>{label}</Animated.Text>
     </View>

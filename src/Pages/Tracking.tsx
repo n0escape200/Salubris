@@ -9,7 +9,8 @@ import {
   faGlassWater,
   faPersonWalking,
 } from '@fortawesome/free-solid-svg-icons';
-import WaterTracking from '../Components/WaterTracking';
+import WaterTrackingPage from '../Components/WaterTracking';
+import StepTrackingPage from '../Components/StepTrackingPage';
 
 export default function Tracking() {
   const [page, setPage] = useState(1);
@@ -18,9 +19,9 @@ export default function Tracking() {
       case 1:
         return <MacroTracking />;
       case 2:
-        return <WaterTracking />;
+        return <WaterTrackingPage />;
       case 3:
-        return <View></View>;
+        return <StepTrackingPage />;
       default:
         return <MacroTracking />;
     }

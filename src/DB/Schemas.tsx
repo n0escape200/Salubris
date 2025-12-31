@@ -33,5 +33,12 @@ export const databaseSchema = appSchema({
         { name: 'value', type: 'string' },
       ],
     }),
+    tableSchema({
+      name: 'water_tracking',
+      columns: [
+        { name: 'ammount', type: 'string' },
+        { name: 'date', type: 'string' },
+      ],
+    }),
   ],
 });

@@ -31,3 +31,6 @@ $ npx tsc --noEmit
 
 Build APK
 $ ./gradlew assembleRelease
+
+Run patches
+$ npx patch-package

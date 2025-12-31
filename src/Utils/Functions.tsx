@@ -5,7 +5,7 @@ import AccountSettings from '../DB/Models/AccountSettings';
 export function mapState(
   data: Record<string, any>,
   state: Record<string, any>,
-  setState: React.Dispatch<React.SetStateAction<any>>,
+  setState?: React.Dispatch<React.SetStateAction<any>>,
 ) {
   const source = data._raw ? data._raw : data;
 
@@ -16,7 +16,10 @@ export function mapState(
       newState[key] = value;
     }
   });
-  setState(newState);
+  if (setState) {
+    setState(newState);
+  }
+  return newState;
 }
 
 type Macros = {

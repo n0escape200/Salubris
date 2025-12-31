@@ -8,14 +8,51 @@ import { useNotification } from '../Utils/Contexts/NotificationContext';
 import { database } from '../DB/Database';
 import AccountSettings from '../DB/Models/AccountSettings';
 import { Q } from '@nozbe/watermelondb';
+import WaterTracking from '../DB/Models/WaterTracking';
 
-export default function WaterTracking() {
+export default function WaterTrackingPage() {
   const { addNotification } = useNotification();
   const [cupSizes, setCupSizes] = useState({
     small: 0,
     medium: 0,
     large: 0,
   });
+  const [totalAmmount, setTotalAmmount] = useState(0);
+  const [shouldUpdate, setShouldUpdate] = useState(true);
+
+  async function getWaterForToday() {
+    try {
+      const data = await database
+        .get<WaterTracking>('water_tracking')
+        .query()
+        .fetch();
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const todaysRecords = data.filter(record => {
+        const recordDate = new Date(record.date);
+        recordDate.setHours(0, 0, 0, 0);
+        return recordDate.getTime() === today.getTime();
+      });
+
+      const total = todaysRecords.reduce((sum, record) => {
+        const value = Number(record.ammount);
+        return sum + (isNaN(value) ? 0 : value);
+      }, 0);
+
+      setTotalAmmount(total);
+    } catch (error) {
+      addNotification({ type: 'ERROR', message: `${error}` });
+    }
+  }
+
+  useEffect(() => {
+    if (shouldUpdate) {
+      getWaterForToday();
+      setShouldUpdate(false);
+    }
+  }, [shouldUpdate]);
 
   async function getData() {
     try {
@@ -41,6 +78,20 @@ export default function WaterTracking() {
     }
   }
 
+  async function addWater(ammount: number) {
+    try {
+      await database.write(async () => {
+        await database.get<WaterTracking>('water_tracking').create(w => {
+          w.ammount = ammount.toString();
+          w.date = new Date().toString();
+        });
+      });
+    } catch (error) {
+      console.log(error);
+      addNotification({ type: 'ERROR', message: `${error}` });
+    }
+  }
+
   useEffect(() => {
     getData();
   }, []);
@@ -59,7 +110,9 @@ export default function WaterTracking() {
           }}
         >
           <FontAwesomeIcon color="white" icon={faDroplet} size={40} />
-          <Text style={{ color: 'white', fontSize: 40 }}>0ml</Text>
+          <Text
+            style={{ color: 'white', fontSize: 40 }}
+          >{`${totalAmmount}ml`}</Text>
         </View>
       </View>
       <View style={styles.container}>
@@ -84,6 +137,10 @@ export default function WaterTracking() {
                 padding: 15,
                 borderRadius: 10,
               }}
+              onPress={() => {
+                addWater(cupSizes.small);
+                setShouldUpdate(true);
+              }}
             >
               <FontAwesomeIcon icon={faGlassWater} color="white" size={20} />
             </Pressable>
@@ -103,6 +160,10 @@ export default function WaterTracking() {
                 backgroundColor: 'rgba(112, 112, 112, 1)',
                 padding: 13,
                 borderRadius: 10,
+              }}
+              onPress={() => {
+                addWater(cupSizes.medium);
+                setShouldUpdate(true);
               }}
             >
               <FontAwesomeIcon icon={faGlassWater} color="white" size={25} />
@@ -125,6 +186,10 @@ export default function WaterTracking() {
                 padding: 10,
                 borderRadius: 10,
               }}
+              onPress={() => {
+                addWater(cupSizes.large);
+                setShouldUpdate(true);
+              }}
             >
               <FontAwesomeIcon icon={faGlassWater} color="white" size={30} />
             </Pressable>
@@ -133,7 +198,21 @@ export default function WaterTracking() {
             </Text>
           </View>
         </View>
-        <Input label="Custom ammount" type="number" backgroundColor="#1c1c1c" />
+        <Input
+          label="Custom ammount"
+          type="number"
+          backgroundColor="#1c1c1c"
+          onSubmit={e => {
+            if (e.nativeEvent.text !== '') {
+              addWater(+e.nativeEvent.text);
+              setShouldUpdate(true);
+              addNotification({
+                type: 'SUCCESS',
+                message: `Added ${e.nativeEvent.text}ml`,
+              });
+            }
+          }}
+        />
       </View>
       {/* <Text style={{ color: 'white', fontSize: 25 }}>Consumption history</Text>
       <ScrollView style={styles.container}>
