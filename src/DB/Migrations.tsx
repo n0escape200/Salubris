@@ -35,5 +35,17 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 4,
+      steps: [
+        createTable({
+          name: 'water_tracking',
+          columns: [
+            { name: 'ammount', type: 'string' },
+            { name: 'date', type: 'string' },
+          ],
+        }),
+      ],
+    },
   ],
 });
