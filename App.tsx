@@ -1,6 +1,12 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { View } from 'react-native';
+import {
+  NativeModules,
+  View,
+  Platform,
+  PermissionsAndroid,
+  Alert,
+} from 'react-native';
 import Routes from './src/Routes';
 import Footer from './src/Components/Footer';
 import { navigationRef } from './src/Utils/NavigationRef';
@@ -8,10 +14,12 @@ import { NotificationProvider } from './src/Utils/Contexts/NotificationContext';
 import { Notifications } from './src/Components/Notifications';
 import { TrackingProvider } from './src/Utils/Contexts/TrackingContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Database, Q } from '@nozbe/watermelondb';
+import { Database } from '@nozbe/watermelondb';
 import { useEffect } from 'react';
 import { database } from './src/DB/Database';
 import { checkSetting } from './src/Utils/Functions';
+
+const { StepCounterModule } = NativeModules;
 
 async function initSettings() {
   await checkSetting('account_settings', 'smallWater', '100');
@@ -19,13 +27,43 @@ async function initSettings() {
   await checkSetting('account_settings', 'largeWater', '500');
 }
 
+async function requestActivityRecognitionPermission() {
+  if (Platform.OS !== 'android') return true;
+
+  if (Platform.Version >= 29) {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACTIVITY_RECOGNITION,
+      {
+        title: 'Step Tracking Permission',
+        message: 'We need access to your physical activity to track steps.',
+        buttonPositive: 'Allow',
+        buttonNegative: 'Deny',
+      },
+    );
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  }
+  return true;
+}
+
+async function startStepService() {
+  const permissionGranted = await requestActivityRecognitionPermission();
+  if (!permissionGranted) {
+    Alert.alert(
+      'Permission required',
+      'Step tracking will not work without Activity Recognition permission.',
+    );
+    return;
+  }
+
+  // Start the step sensor / foreground service
+  StepCounterModule.startStepService?.();
+}
+
 async function backfillTrackLines(database: Database) {
   await database.write(async () => {
-    // Fetch all track lines
     const trackLines: any = await database.get('track_lines').query().fetch();
 
     for (const line of trackLines) {
-      // Only process lines that have product_id
       if (!('product_id' in line)) continue;
 
       try {
@@ -38,15 +76,12 @@ async function backfillTrackLines(database: Database) {
           continue;
         }
 
-        // Update the track line with name and macros
         await line.update((l: any) => {
           l.name = product.name;
           l.calories = product.calories;
           l.protein = product.protein;
           l.carbs = product.carbs;
           l.fats = product.fats;
-
-          // Remove the old product_id field
           delete l.product_id;
         });
       } catch (error) {
@@ -60,7 +95,9 @@ function AppContent() {
   useEffect(() => {
     backfillTrackLines(database);
     initSettings();
+    startStepService();
   }, []);
+
   return (
     <>
       <Notifications />
@@ -79,12 +116,7 @@ export default function App() {
       <TrackingProvider>
         <NotificationProvider>
           <SafeAreaProvider>
-            <SafeAreaView
-              style={{
-                flex: 1,
-                backgroundColor: 'black',
-              }}
-            >
+            <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
               <AppContent />
             </SafeAreaView>
           </SafeAreaProvider>

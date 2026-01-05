@@ -1,46 +1,76 @@
 package com.salubris.stepcounter;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
+
+import java.util.Calendar;
 
 public class StepCounterModule extends ReactContextBaseJavaModule {
 
-    public StepCounterModule(ReactApplicationContext reactContext) {
-        super(reactContext);
-        StepEventEmitter.setContext(reactContext);
+    private static ReactApplicationContext reactContext;
+
+    public StepCounterModule(@NonNull ReactApplicationContext context) {
+        super(context);
+        reactContext = context;
     }
 
     @NonNull
     @Override
     public String getName() {
-        return "StepCounter";
-    }
-
-    // Required for NativeEventEmitter
-    @ReactMethod
-    public void addListener(String eventName) {
-        // No-op, required for RN >= 0.65
+        return "StepCounterModule";
     }
 
     @ReactMethod
-    public void removeListeners(Integer count) {
-        // No-op, required for RN >= 0.65
+    public void startStepService() {
+        Intent serviceIntent = new Intent(reactContext, StepCounterService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            reactContext.startForegroundService(serviceIntent);
+        } else {
+            reactContext.startService(serviceIntent);
+        }
+
     }
 
     @ReactMethod
-    public void startService() {
-        Intent intent = new Intent(getReactApplicationContext(), StepCounterService.class);
-        getReactApplicationContext().startForegroundService(intent);
+    public void stopStepService() {
+        Intent serviceIntent = new Intent(reactContext, StepCounterService.class);
+        reactContext.stopService(serviceIntent);
+    }
+
+    public static void sendStepEvent(int steps) {
+        if (reactContext.hasActiveCatalystInstance()) {
+            reactContext
+                    .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit("StepEvent", steps);
+        }
     }
 
     @ReactMethod
-    public void stopService() {
-        Intent intent = new Intent(getReactApplicationContext(), StepCounterService.class);
-        getReactApplicationContext().stopService(intent);
+    public void getCurrentSteps(Promise promise) {
+        SharedPreferences prefs = getReactApplicationContext().getSharedPreferences(
+                "step_counter_prefs", Context.MODE_PRIVATE);
+
+        long today = Calendar.getInstance().get(Calendar.DAY_OF_YEAR);
+        long storedDay = prefs.getLong("last_day", today);
+        int steps = prefs.getInt("steps_today", 0);
+
+        if (today != storedDay) {
+            steps = 0;
+        }
+
+        promise.resolve(steps);
     }
+
+
+
 }

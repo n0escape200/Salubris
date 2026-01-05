@@ -1,31 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  Button,
-  NativeEventEmitter,
-  NativeModules,
-} from 'react-native';
-
-const { StepCounter } = NativeModules;
-const stepEmitter = new NativeEventEmitter(StepCounter);
+import { View, Text, NativeModules, DeviceEventEmitter } from 'react-native';
+const { StepCounterModule } = NativeModules;
 
 export default function StepTrackingPage() {
   const [steps, setSteps] = useState(0);
 
   useEffect(() => {
-    console.log('stepEmitter', stepEmitter);
-    const subscription = stepEmitter.addListener('StepUpdate', count => {
-      setSteps(count);
-    });
-
-    return () => subscription.remove(); // clean up on unmount
+    const initSet = async () => {
+      const steps = await StepCounterModule.getCurrentSteps();
+      setSteps(steps);
+    };
+    initSet();
   }, []);
+
+  useEffect(() => {
+    StepCounterModule.startStepService();
+
+    const sub = DeviceEventEmitter.addListener('StepEvent', setSteps);
+
+    return () => {
+      sub.remove();
+      StepCounterModule.stopStepService();
+    };
+  }, []);
+
   return (
-    <View style={{ padding: 20 }}>
-      <Text style={{ color: 'white' }}>Steps: {steps}</Text>
-      <Button title="Start" onPress={() => StepCounter.startService()} />
-      <Button title="Stop" onPress={() => StepCounter.stopService()} />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ fontSize: 24, color: 'white' }}>Steps Today:</Text>
+      <Text style={{ fontSize: 48, color: 'white', marginTop: 20 }}>
+        {steps}
+      </Text>
     </View>
   );
 }

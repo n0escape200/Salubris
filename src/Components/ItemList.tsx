@@ -42,6 +42,9 @@ export default function ItemList({ product }: ItemListProps) {
     }
   }
 
+  const clampValue = (value?: number) =>
+    value !== undefined ? value.toFixed(2) : '0.00';
+
   return (
     <View
       style={{
@@ -79,7 +82,7 @@ export default function ItemList({ product }: ItemListProps) {
         }}
       >
         <Text style={styles.textl}>Kcal:</Text>
-        <Text style={styles.textl}>{product?.calories || 0}</Text>
+        <Text style={styles.textl}>{clampValue(product?.calories)}</Text>
       </View>
       <View
         style={{
@@ -90,7 +93,7 @@ export default function ItemList({ product }: ItemListProps) {
         }}
       >
         <Text style={styles.textl}>Protein:</Text>
-        <Text style={styles.textl}>{product?.protein || 0}</Text>
+        <Text style={styles.textl}>{clampValue(product?.protein)}</Text>
       </View>
       <View
         style={{
@@ -101,7 +104,7 @@ export default function ItemList({ product }: ItemListProps) {
         }}
       >
         <Text style={styles.textl}>Carbs:</Text>
-        <Text style={styles.textl}>{product?.carbs || 0}</Text>
+        <Text style={styles.textl}>{clampValue(product?.carbs)}</Text>
       </View>
       <View
         style={{
@@ -112,7 +115,7 @@ export default function ItemList({ product }: ItemListProps) {
         }}
       >
         <Text style={styles.textl}>Fats:</Text>
-        <Text style={styles.textl}>{product?.fats || 0}</Text>
+        <Text style={styles.textl}>{clampValue(product?.fats)}</Text>
       </View>
     </View>
   );
