@@ -26,13 +26,6 @@ export const migrations = schemaMigrations({
           table: 'track_lines',
           columns: [{ name: 'name', type: 'string' }],
         },
-        createTable({
-          name: 'account_settings',
-          columns: [
-            { name: 'field', type: 'string' },
-            { name: 'value', type: 'string' },
-          ],
-        }),
       ],
     },
     {
@@ -43,6 +36,18 @@ export const migrations = schemaMigrations({
           columns: [
             { name: 'ammount', type: 'string' },
             { name: 'date', type: 'string' },
+          ],
+        }),
+      ],
+    },
+    {
+      toVersion: 5,
+      steps: [
+        createTable({
+          name: 'account_settings',
+          columns: [
+            { name: 'field', type: 'string' },
+            { name: 'value', type: 'string' },
           ],
         }),
       ],
