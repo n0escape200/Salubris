@@ -6,6 +6,7 @@ import {
   Platform,
   PermissionsAndroid,
   Alert,
+  DeviceEventEmitter,
 } from 'react-native';
 import Routes from './src/Routes';
 import Footer from './src/Components/Footer';
@@ -18,6 +19,7 @@ import { Database } from '@nozbe/watermelondb';
 import { useEffect } from 'react';
 import { database } from './src/DB/Database';
 import { checkSetting } from './src/Utils/Functions';
+import StepCounterProvider from './src/Utils/Contexts/StepCounterContext';
 
 const { StepCounterModule } = NativeModules;
 
@@ -113,15 +115,17 @@ function AppContent() {
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <TrackingProvider>
-        <NotificationProvider>
-          <SafeAreaProvider>
-            <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
-              <AppContent />
-            </SafeAreaView>
-          </SafeAreaProvider>
-        </NotificationProvider>
-      </TrackingProvider>
+      <StepCounterProvider>
+        <TrackingProvider>
+          <NotificationProvider>
+            <SafeAreaProvider>
+              <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
+                <AppContent />
+              </SafeAreaView>
+            </SafeAreaProvider>
+          </NotificationProvider>
+        </TrackingProvider>
+      </StepCounterProvider>
     </GestureHandlerRootView>
   );
 }
