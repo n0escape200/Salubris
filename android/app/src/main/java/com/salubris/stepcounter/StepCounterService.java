@@ -59,7 +59,14 @@ public class StepCounterService extends Service implements SensorEventListener {
 
     private void registerSensor() {
         if (stepSensor != null) {
-            sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            try {
+                sensorManager.registerListener(this, stepSensor, SensorManager.SENSOR_DELAY_NORMAL);
+                Log.d(TAG, "Sensor registered successfully");
+            } catch (SecurityException e) {
+                Log.e(TAG, "Security exception when registering sensor - permission not granted", e);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to register sensor listener", e);
+            }
         } else {
             Log.d(TAG, "No step detector sensor found!");
         }

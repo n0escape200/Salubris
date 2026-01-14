@@ -1,6 +1,12 @@
 import { createContext, ReactNode, useEffect, useState } from 'react';
-import { DeviceEventEmitter, NativeModules } from 'react-native';
+import {
+  DeviceEventEmitter,
+  NativeModules,
+  Platform,
+  PermissionsAndroid,
+} from 'react-native';
 const { StepCounterModule } = NativeModules;
+
 type StepCounterType = {
   children: ReactNode;
 };
@@ -12,6 +18,24 @@ type StepCounterContextProps = {
 export const StepCounterContext = createContext<StepCounterContextProps>({
   steps: 0,
 });
+
+async function requestActivityRecognitionPermission() {
+  if (Platform.OS !== 'android') return true;
+
+  if (Platform.Version >= 29) {
+    const granted = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.ACTIVITY_RECOGNITION,
+      {
+        title: 'Step Tracking Permission',
+        message: 'We need access to your physical activity to track steps.',
+        buttonPositive: 'Allow',
+        buttonNegative: 'Deny',
+      },
+    );
+    return granted === PermissionsAndroid.RESULTS.GRANTED;
+  }
+  return true;
+}
 
 export default function StepCounterProvider({ children }: StepCounterType) {
   const [steps, setSteps] = useState(0);
@@ -25,7 +49,14 @@ export default function StepCounterProvider({ children }: StepCounterType) {
   }, []);
 
   useEffect(() => {
-    StepCounterModule.startStepService();
+    const initService = async () => {
+      const permissionGranted = await requestActivityRecognitionPermission();
+      if (permissionGranted) {
+        StepCounterModule.startStepService();
+      }
+    };
+
+    initService();
 
     const sub = DeviceEventEmitter.addListener('StepEvent', setSteps);
     return () => {

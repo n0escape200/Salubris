@@ -47,20 +47,6 @@ async function requestActivityRecognitionPermission() {
   return true;
 }
 
-async function startStepService() {
-  const permissionGranted = await requestActivityRecognitionPermission();
-  if (!permissionGranted) {
-    Alert.alert(
-      'Permission required',
-      'Step tracking will not work without Activity Recognition permission.',
-    );
-    return;
-  }
-
-  // Start the step sensor / foreground service
-  StepCounterModule.startStepService?.();
-}
-
 async function backfillTrackLines(database: Database) {
   await database.write(async () => {
     const trackLines: any = await database.get('track_lines').query().fetch();
@@ -97,7 +83,6 @@ function AppContent() {
   useEffect(() => {
     backfillTrackLines(database);
     initSettings();
-    startStepService();
   }, []);
 
   return (
