@@ -1,9 +1,4 @@
-import {
-  faCarrot,
-  faHouse,
-  faMap,
-  faUser,
-} from '@fortawesome/free-solid-svg-icons';
+import { faCarrot, faHouse, faUser } from '@fortawesome/free-solid-svg-icons';
 import Vocabulary from './Vocabulary';
 import { faClipboard } from '@fortawesome/free-solid-svg-icons/faClipboard';
 
