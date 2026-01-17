@@ -1,28 +1,40 @@
 import { NavigationContainer } from '@react-navigation/native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
 import {
   NativeModules,
   View,
   Platform,
   PermissionsAndroid,
-  Alert,
-  DeviceEventEmitter,
 } from 'react-native';
-import Routes from './src/Routes';
-import Footer from './src/Components/Footer';
-import { navigationRef } from './src/Utils/NavigationRef';
-import { NotificationProvider } from './src/Utils/Contexts/NotificationContext';
-import { Notifications } from './src/Components/Notifications';
-import { TrackingProvider } from './src/Utils/Contexts/TrackingContext';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Database } from '@nozbe/watermelondb';
-import { useEffect } from 'react';
-import { database } from './src/DB/Database';
-import { checkSetting } from './src/Utils/Functions';
+import { useEffect, useState } from 'react';
+
+// Components & Pages
+import Footer from './src/Components/Footer';
+import { Notifications } from './src/Components/Notifications';
+
+// Context Providers
+import { NotificationProvider } from './src/Utils/Contexts/NotificationContext';
+import { TrackingProvider } from './src/Utils/Contexts/TrackingContext';
 import StepCounterProvider from './src/Utils/Contexts/StepCounterContext';
 
-const { StepCounterModule } = NativeModules;
+// Utils & Database
+import { navigationRef } from './src/Utils/NavigationRef';
+import { database } from './src/DB/Database';
+import { checkSetting } from './src/Utils/Functions';
+import MainPager from './src/MainPager';
+import { PagerProvider } from './src/Utils/Contexts/PageContext';
 
+const { StepCounterModule } = NativeModules;
+const Stack = createNativeStackNavigator();
+
+// Helper Functions
 async function initSettings() {
   await checkSetting('account_settings', 'smallWater', '100');
   await checkSetting('account_settings', 'mediumWater', '250');
@@ -80,6 +92,9 @@ async function backfillTrackLines(database: Database) {
 }
 
 function AppContent() {
+  const [footerHeight, setFooterHeight] = useState(0);
+  const insets = useSafeAreaInsets();
+
   useEffect(() => {
     backfillTrackLines(database);
     initSettings();
@@ -89,10 +104,22 @@ function AppContent() {
     <>
       <Notifications />
       <NavigationContainer ref={navigationRef}>
-        <Routes />
-        <View style={{ height: 50 }} />
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainPager" component={MainPager} />
+        </Stack.Navigator>
+        {/* Dynamic padding based on actual footer height + small gap */}
+        <View style={{ height: footerHeight > 0 ? footerHeight : 60 }} />
       </NavigationContainer>
-      <Footer />
+      {/* Footer with safe area padding */}
+      <View
+        style={{ paddingBottom: insets.bottom }}
+        onLayout={event => {
+          const { height } = event.nativeEvent.layout;
+          setFooterHeight(height);
+        }}
+      >
+        <Footer />
+      </View>
     </>
   );
 }
@@ -103,11 +130,13 @@ export default function App() {
       <StepCounterProvider>
         <TrackingProvider>
           <NotificationProvider>
-            <SafeAreaProvider>
-              <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
-                <AppContent />
-              </SafeAreaView>
-            </SafeAreaProvider>
+            <PagerProvider>
+              <SafeAreaProvider>
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
+                  <AppContent />
+                </SafeAreaView>
+              </SafeAreaProvider>
+            </PagerProvider>
           </NotificationProvider>
         </TrackingProvider>
       </StepCounterProvider>

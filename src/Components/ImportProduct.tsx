@@ -32,7 +32,7 @@ export default function ImportProduct({
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isNoData, setIsNotData] = useState(false);
-  const maxScrollHeight = height * 0.65;
+  const maxScrollHeight = height * 0.6;
 
   function getMacro(product: any, macro: string): number {
     const value = (product.foodNutrients as Array<any>).filter(value =>

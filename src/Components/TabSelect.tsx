@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
   container: {
     alignSelf: 'flex-start',
     position: 'relative',
+    zIndex: 2,
   },
   header: {
     flexDirection: 'row',

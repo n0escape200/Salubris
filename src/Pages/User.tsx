@@ -21,14 +21,6 @@ export default function User() {
   return (
     <View style={styles.page}>
       <CustomButton label="Show database" onPress={() => setDbActive(true)} />
-      <CustomButton
-        label="Reset database"
-        onPress={async () => {
-          await database.write(async () => {
-            database.unsafeResetDatabase();
-          });
-        }}
-      />
       <DBVIsualize
         open={dbActive}
         onClose={() => {

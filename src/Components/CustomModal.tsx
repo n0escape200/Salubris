@@ -17,13 +17,12 @@ type CustomModalProps = {
   open: boolean;
   onClose?: () => void;
   children?: ReactNode;
-  overlayStyle?: ViewStyle;
 };
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function CustomModal(props: CustomModalProps) {
-  const { title, open, onClose, children, overlayStyle } = props;
+  const { title, open, onClose, children } = props;
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -38,7 +37,7 @@ export default function CustomModal(props: CustomModalProps) {
   if (!open) return null;
 
   return (
-    <View style={[styles.overlay, overlayStyle]}>
+    <View style={[styles.overlay]}>
       <Animated.View
         style={[styles.modal, { transform: [{ translateY: slideAnim }] }]}
       >
@@ -69,7 +68,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.8)',
-    zIndex: 9999,
+    zIndex: 1,
   },
   modal: {
     flex: 1,
