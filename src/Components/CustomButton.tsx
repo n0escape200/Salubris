@@ -6,7 +6,7 @@ type CustomButtonProps = {
   fontColor?: string;
   fontSize?: number;
   innerShadow?: string;
-  width?: number;
+  width?: any;
   onPress?: () => void;
 };
 
@@ -19,7 +19,7 @@ export default function CustomButton(props: CustomButtonProps) {
         {
           backgroundColor: color ? color : 'white',
           marginTop: 10,
-          width: width ? width : '100%',
+          width: width ? width : 'auto',
           paddingVertical: 12,
           paddingHorizontal: 20,
           borderRadius: 20,

@@ -67,14 +67,29 @@ export default function Form({ children, onSubmit, onCancel }: FormProps) {
   return (
     <View style={{ gap: 15 }}>
       {enhancedChildren}
-      <CustomButton
-        label="Submit"
-        onPress={() => {
-          const valid = handleValidation();
-          onSubmit(valid);
+      <View
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
         }}
-      />
-      <CustomButton label="Cancel" onPress={onCancel} />
+      >
+        <CustomButton
+          label="Submit"
+          onPress={() => {
+            const valid = handleValidation();
+            onSubmit(valid);
+          }}
+          width={'45%'}
+        />
+        <CustomButton
+          label="Cancel"
+          onPress={onCancel}
+          width={'45%'}
+          color="#dc3f47"
+          fontColor="white"
+        />
+      </View>
     </View>
   );
 }

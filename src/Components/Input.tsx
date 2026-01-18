@@ -69,7 +69,7 @@ export default forwardRef(function Input(
   }));
 
   return (
-    <View style={{ position: 'relative', marginTop: 20 }}>
+    <View style={{ position: 'relative', marginTop: 5 }}>
       <TextInput
         style={{
           color: 'white',

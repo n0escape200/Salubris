@@ -58,32 +58,36 @@ export default function TabSelect({ options, page, setPage }: TabSelectType) {
         <Text style={styles.title}>{options[page - 1]?.label}</Text>
       </View>
 
-      <Animated.View
-        style={[styles.menu, animatedMenuStyle]}
-        onLayout={e => {
-          const { width, height } = e.nativeEvent.layout;
-          menuWidth.value = width;
-          menuHeight.value = height;
-        }}
-      >
-        {options.map((option, index) => (
-          <Pressable
-            key={index}
-            onPress={() => {
-              setPage(index + 1);
-              toggleMenu();
-            }}
-          >
-            <View style={styles.menuRow}>
-              {option.icon}
-              <Text style={styles.menuItem}>{option.label}</Text>
-            </View>
-          </Pressable>
-        ))}
-      </Animated.View>
+      {open && (
+        <Animated.View
+          style={[styles.menu, animatedMenuStyle]}
+          onLayout={e => {
+            const { width, height } = e.nativeEvent.layout;
+            menuWidth.value = width;
+            menuHeight.value = height;
+          }}
+        >
+          {options.map((option, index) => (
+            <Pressable
+              key={index}
+              onPress={() => {
+                setPage(index + 1);
+                toggleMenu();
+              }}
+            >
+              <View style={styles.menuRow}>
+                {option.icon}
+                <Text style={styles.menuItem}>{option.label}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </Animated.View>
+      )}
     </View>
   );
 }
+
+// ... styles remain the same
 
 const styles = StyleSheet.create({
   container: {

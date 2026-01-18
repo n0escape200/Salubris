@@ -298,7 +298,9 @@ export default function Products() {
       <ScrollView style={[styles.container, { padding: 10 }]}>
         <View style={{ gap: 10 }}>
           {products.map((product, index) => (
-            <ItemList key={index} product={product} />
+            <Pressable onPress={() => {}} key={index}>
+              <ItemList product={product} />
+            </Pressable>
           ))}
         </View>
       </ScrollView>
