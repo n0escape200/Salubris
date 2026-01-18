@@ -35,4 +35,41 @@ export const styles = StyleSheet.create({
     color: 'white',
     fontSize: 15,
   },
+  wrapper: {
+    position: 'relative',
+    zIndex: 50,
+  },
+
+  input: {
+    borderBottomColor: '#ffffff80',
+    borderBottomWidth: 0.5,
+    color: 'white',
+    paddingVertical: 8,
+    fontSize: 15, // matches textl
+  },
+
+  dropdown: {
+    position: 'absolute',
+    top: 38,
+    left: 0,
+    right: 0,
+    backgroundColor: '#1c1c1c', // same as container
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#222222',
+    elevation: 6, // Android
+    zIndex: 100,
+  },
+
+  option: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#2a2a2a',
+  },
+
+  optionText: {
+    color: 'white',
+    fontSize: 15, // textl
+  },
 });

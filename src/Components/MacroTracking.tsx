@@ -92,6 +92,18 @@ export default function MacroTracking() {
     }
   }
 
+  function reset() {
+    setOpen(false);
+    setProductForm({
+      id: undefined,
+      name: '',
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+    });
+  }
+
   const trackContext = useContext(TrackingContext);
   return (
     <View style={styles.page}>
@@ -157,12 +169,8 @@ export default function MacroTracking() {
         )}
       </ScrollView>
 
-      <CustomModal
-        title="Add product"
-        open={open}
-        onClose={() => setOpen(false)}
-      >
-        <Form onSubmit={createEntry} onCancel={() => setOpen(false)}>
+      <CustomModal title="Add product" open={open} onClose={reset}>
+        <Form onSubmit={createEntry} onCancel={reset}>
           <Autocomplete
             placeholder="Products"
             options={trackContext?.products || []}
@@ -221,6 +229,7 @@ export default function MacroTracking() {
                 initValue={quantity.unit}
                 options={['kg', 'g']}
                 onChange={v => setQuantity(q => ({ ...q, unit: v }))}
+                textInputStyle={{ textAlign: 'center' }}
               />
             </View>
           </View>

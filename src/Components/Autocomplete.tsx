@@ -1,6 +1,7 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Pressable, Text, TextInput, View, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
+import { styles } from '../Utils/Styles';
 
 type Option = string | Record<string, any>;
 
@@ -10,20 +11,26 @@ type AutocompleteProps = {
   optionLabel?: string;
   onChange?: (value: any) => void;
   initValue?: string;
+  textInputStyle?: any;
 };
 
-export default function Autocomplete(props: AutocompleteProps) {
-  const { placeholder, options, optionLabel, onChange, initValue } = props;
-
+export default function Autocomplete({
+  placeholder,
+  options,
+  optionLabel,
+  onChange,
+  initValue,
+  textInputStyle,
+}: AutocompleteProps) {
   const [value, setValue] = useState(initValue ?? '');
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<TextInput>(null);
-  const isSelectingOptionRef = useRef(false);
 
   const getLabel = (opt: Option) => {
     if (typeof opt === 'string') return opt;
-    if (optionLabel && opt?.[optionLabel] != null)
+    if (optionLabel && opt?.[optionLabel] != null) {
       return String(opt[optionLabel]);
+    }
     return '';
   };
 
@@ -38,78 +45,40 @@ export default function Autocomplete(props: AutocompleteProps) {
     setValue(label);
     setIsOpen(false);
     onChange?.(opt);
-  };
-
-  // Handle option press
-  const handleOptionPress = (opt: Option) => {
-    isSelectingOptionRef.current = true;
-    handleSelect(opt);
-    // Reset after a short delay
-    setTimeout(() => {
-      isSelectingOptionRef.current = false;
-    }, 100);
-  };
-
-  // Handle input blur
-  const handleInputBlur = () => {
-    // Only close if not selecting an option
-    setTimeout(() => {
-      if (!isSelectingOptionRef.current) {
-        setIsOpen(false);
-      }
-    }, 200);
-  };
-
-  // Handle input focus
-  const handleInputFocus = () => {
-    setIsOpen(true);
-  };
-
-  // Handle text change
-  const handleTextChange = (text: string) => {
-    setValue(text);
-    setIsOpen(true);
+    requestAnimationFrame(() => {
+      inputRef.current?.blur();
+    });
   };
 
   return (
-    <View style={styles.container}>
+    <View>
       <TextInput
         ref={inputRef}
-        style={styles.input}
+        style={[styles.input, textInputStyle]}
         placeholder={placeholder}
         placeholderTextColor="#b0b0b0"
         value={value}
-        onFocus={handleInputFocus}
-        onBlur={handleInputBlur}
-        onChangeText={handleTextChange}
+        onFocus={() => setIsOpen(true)}
+        onChangeText={text => {
+          setValue(text);
+          setIsOpen(true);
+        }}
+        onBlur={() => {
+          setIsOpen(false);
+        }}
       />
 
       {isOpen && filteredOptions.length > 0 && (
         <View style={styles.dropdown}>
           <ScrollView
             style={{ maxHeight: 220 }}
-            nestedScrollEnabled={true}
-            showsVerticalScrollIndicator={true}
-            keyboardShouldPersistTaps="handled"
-            // These props prevent the scroll from propagating to parent
-            onStartShouldSetResponder={() => true}
-            onMoveShouldSetResponder={() => true}
-            onResponderGrant={() => {
-              // When user starts scrolling the dropdown
-              isSelectingOptionRef.current = true;
-            }}
-            onResponderRelease={() => {
-              // When user stops scrolling
-              setTimeout(() => {
-                isSelectingOptionRef.current = false;
-              }, 50);
-            }}
-            onResponderTerminationRequest={() => false}
+            keyboardShouldPersistTaps="always"
+            showsVerticalScrollIndicator
           >
             {filteredOptions.map((opt, idx) => (
               <Pressable
                 key={idx}
-                onPress={() => handleOptionPress(opt)}
+                onPress={() => handleSelect(opt)}
                 style={({ pressed }) => [
                   styles.option,
                   pressed && { backgroundColor: '#2a2a2a' },
@@ -124,42 +93,3 @@ export default function Autocomplete(props: AutocompleteProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    zIndex: 1000,
-  },
-  input: {
-    borderBottomColor: '#ffffff80',
-    borderBottomWidth: 0.5,
-    color: 'white',
-    paddingVertical: 8,
-    zIndex: 1001,
-  },
-  dropdown: {
-    position: 'absolute',
-    top: 40,
-    left: 0,
-    right: 0,
-    backgroundColor: '#1f1f1f',
-    borderWidth: 1,
-    borderColor: '#bdbdbdff',
-    borderRadius: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
-    elevation: 5,
-    zIndex: 1000,
-  },
-  option: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomColor: '#444',
-    borderBottomWidth: 0.5,
-  },
-  optionText: {
-    color: '#ffffff',
-    fontSize: 16,
-  },
-});
