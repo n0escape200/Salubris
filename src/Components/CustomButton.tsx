@@ -1,4 +1,4 @@
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, StyleProp, Text, View, ViewStyle } from 'react-native';
 
 type CustomButtonProps = {
   label: string;
@@ -8,11 +8,20 @@ type CustomButtonProps = {
   innerShadow?: string;
   width?: any;
   onPress?: () => void;
+  customStyle?: StyleProp<ViewStyle>;
 };
 
 export default function CustomButton(props: CustomButtonProps) {
-  const { label, color, fontColor, fontSize, innerShadow, width, onPress } =
-    props;
+  const {
+    label,
+    color,
+    fontColor,
+    fontSize,
+    innerShadow,
+    width,
+    onPress,
+    customStyle,
+  } = props;
   return (
     <Pressable
       style={({ pressed }) => [
@@ -27,6 +36,7 @@ export default function CustomButton(props: CustomButtonProps) {
           alignItems: 'center',
         },
         pressed && { opacity: 0.9 },
+        customStyle,
       ]}
       onPress={() => {
         onPress?.();

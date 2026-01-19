@@ -16,6 +16,7 @@ import { database } from '../DB/Database';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
 import TrackLine from '../DB/Models/TrackLine';
 import CustomButton from './CustomButton';
+import DatePicker from 'react-native-date-picker';
 
 export default function MacroTracking() {
   const [open, setOpen] = useState(false);
@@ -29,7 +30,8 @@ export default function MacroTracking() {
   });
   const [quantity, setQuantity] = useState({ value: '', unit: 'g' });
   const { addNotification } = useNotification();
-
+  const [openDatePicker, setOpenDatePicker] = useState(false);
+  const [date, setDate] = useState(new Date());
   async function createEntry() {
     try {
       await database.write(async () => {
@@ -158,6 +160,19 @@ export default function MacroTracking() {
         <Text style={styles.textxl}>
           {new Intl.DateTimeFormat('en-GB').format(new Date())}
         </Text>
+        <CustomButton
+          label="Pick date"
+          fontSize={13}
+          customStyle={{
+            marginTop: 0,
+            padding: 1,
+            paddingVertical: 2,
+            paddingHorizontal: 20,
+          }}
+          onPress={() => {
+            setOpenDatePicker(true);
+          }}
+        />
       </View>
 
       <ScrollView style={{ ...styles.container, padding: 10 }}>
@@ -236,6 +251,21 @@ export default function MacroTracking() {
           </View>
         </Form>
       </CustomModal>
+      <DatePicker
+        theme="dark"
+        modal
+        mode="date"
+        locale="en-GB"
+        open={openDatePicker}
+        date={date}
+        onConfirm={date => {
+          setOpenDatePicker(false);
+          setDate(date);
+        }}
+        onCancel={() => {
+          setOpenDatePicker(false);
+        }}
+      />
     </View>
   );
 }
