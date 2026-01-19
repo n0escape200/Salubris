@@ -67,6 +67,8 @@ export default function Products() {
     fats: 0,
   });
 
+  const [patchProduct, setPatchProduct] = useState<ProductType | null>(null);
+
   const [products, setProducts] = useState<Array<Product>>([]);
   const [isScannig, setIsScanning] = useState(false);
   const device = useCameraDevice('back');
@@ -89,21 +91,40 @@ export default function Products() {
 
   /* -------------------- Database -------------------- */
 
-  async function addProduct() {
+  async function addOrUpdateProduct() {
     try {
       await database.write(async () => {
-        await database.get<Product>('products').create(p => {
-          p.name = productForm.name;
-          p.calories = productForm.calories;
-          p.protein = productForm.protein;
-          p.carbs = productForm.carbs;
-          p.fats = productForm.fats;
-        });
-      });
+        if (patchProduct?.id) {
+          const product = await database
+            .get<Product>('products')
+            .find(patchProduct.id);
 
-      addNotification({
-        type: 'SUCCESS',
-        message: `${productForm.name} created successfully`,
+          await product.update(p => {
+            p.name = productForm.name;
+            p.calories = productForm.calories;
+            p.protein = productForm.protein;
+            p.carbs = productForm.carbs;
+            p.fats = productForm.fats;
+          });
+
+          addNotification({
+            type: 'SUCCESS',
+            message: `${productForm.name} updated successfully`,
+          });
+        } else {
+          await database.get<Product>('products').create(p => {
+            p.name = productForm.name;
+            p.calories = productForm.calories;
+            p.protein = productForm.protein;
+            p.carbs = productForm.carbs;
+            p.fats = productForm.fats;
+          });
+
+          addNotification({
+            type: 'SUCCESS',
+            message: `${productForm.name} created successfully`,
+          });
+        }
       });
 
       trackingContext?.setUpdateLine(true);
@@ -243,7 +264,21 @@ export default function Products() {
       carbs: 0,
       fats: 0,
     });
+    setPatchProduct(null);
   };
+
+  useEffect(() => {
+    if (patchProduct?.id !== undefined) {
+      setProductForm(prev => ({
+        ...prev,
+        name: patchProduct.name,
+        calories: patchProduct.calories,
+        protein: patchProduct.protein,
+        carbs: patchProduct.carbs,
+        fats: patchProduct.fats,
+      }));
+    }
+  }, [patchProduct]);
 
   return (
     <View style={styles.page}>
@@ -298,7 +333,13 @@ export default function Products() {
       <ScrollView style={[styles.container, { padding: 10 }]}>
         <View style={{ gap: 10 }}>
           {products.map((product, index) => (
-            <Pressable onPress={() => {}} key={index}>
+            <Pressable
+              onPress={() => {
+                setOpenAdd(true);
+                setPatchProduct(product);
+              }}
+              key={index}
+            >
               <ItemList product={product} />
             </Pressable>
           ))}
@@ -313,8 +354,12 @@ export default function Products() {
       />
 
       {/* Add product modal */}
-      <CustomModal title="Add product" open={openAdd} onClose={resetData}>
-        <Form onSubmit={addProduct} onCancel={resetData}>
+      <CustomModal
+        title={patchProduct?.id ? 'Update prodcut' : 'Add product'}
+        open={openAdd}
+        onClose={resetData}
+      >
+        <Form onSubmit={addOrUpdateProduct} onCancel={resetData}>
           <Input
             label="Name"
             value={productForm.name}

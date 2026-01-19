@@ -15,6 +15,7 @@ import Input from './Input';
 import { database } from '../DB/Database';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
 import TrackLine from '../DB/Models/TrackLine';
+import CustomButton from './CustomButton';
 
 export default function MacroTracking() {
   const [open, setOpen] = useState(false);
