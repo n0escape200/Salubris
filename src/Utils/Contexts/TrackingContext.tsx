@@ -20,11 +20,12 @@ type TrackingContextType = {
   todayLines: TrackLine[];
   thisWeekLines: TrackLine[];
   thisMonthLines: TrackLine[];
-  setUpdateLine: Dispatch<SetStateAction<boolean>>;
+  setUpdateLines: Dispatch<SetStateAction<boolean>>;
   addProductToTracking: (_product: ProductType, _amount: number) => void;
   removeProductFromTracking: (_product: ProductType, _amount: number) => void;
   removeProduct: (_product: Product) => Promise<number>;
   removeTrackLine: (_trackLine: TrackLine) => void;
+  getTrackLinesForDate: (_date: Date) => void;
 };
 
 export const TrackingContext = createContext<TrackingContextType | undefined>(
@@ -43,7 +44,7 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   const [todayLines, setTodayLines] = useState<TrackLine[]>([]);
   const [thisMonthLines, setThisMonthLines] = useState<TrackLine[]>([]);
   const [thisWeekLines, setThisWeekLines] = useState<TrackLine[]>([]);
-  const [updateLines, setUpdateLine] = useState(true);
+  const [updateLines, setUpdateLines] = useState(true);
 
   function addProductToTracking(_product: ProductType, _amount: number) {
     const factor = _amount / 100;
@@ -110,7 +111,7 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         return d >= firstDayOfWeek && d <= lastDayOfWeek;
       });
 
-      setTrackLines(normalizedAll);
+      setTrackLines(linesForToday);
       setTodayLines(linesForToday);
       setThisWeekLines(linesForThisWeek);
       setThisMonthLines(linesForThisMonth);
@@ -180,12 +181,37 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
     }
   }
 
+  async function getTrackLinesForDate(date: Date) {
+    try {
+      const formatDate = date.toISOString().split('T')[0];
+
+      const dateLines = await database
+        .get<TrackLine>('track_lines')
+        .query(Q.where('date', formatDate))
+        .fetch();
+
+      const macros = new MacroModel();
+
+      for (const line of dateLines) {
+        macros.calories += line.calories;
+        macros.carbs += line.carbs;
+        macros.fats += line.fats;
+        macros.protein += line.protein;
+      }
+
+      setMacros(macros);
+      setTrackLines(dateLines);
+    } catch (error) {
+      addNotification({ type: 'ERROR', message: `${error}` });
+    }
+  }
+
   useEffect(() => {
     if (!updateLines) return;
     const setup = async () => {
       await getTrackLines();
       await getProducts();
-      setUpdateLine(false);
+      setUpdateLines(false);
     };
     setup();
   }, [updateLines]);
@@ -199,11 +225,12 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         todayLines,
         thisWeekLines,
         thisMonthLines,
-        setUpdateLine,
+        setUpdateLines,
         addProductToTracking,
         removeProductFromTracking,
         removeProduct,
         removeTrackLine,
+        getTrackLinesForDate,
       }}
     >
       {children}

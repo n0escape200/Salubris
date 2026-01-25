@@ -34,3 +34,19 @@ $ ./gradlew assembleRelease
 
 Run patches
 $ npx patch-package
+
+# Clear old logs
+
+adb logcat -c
+
+# Watch logs in real-time
+
+adb logcat | grep -i "step\|sensor\|error\|fatal\|exception\|crash"
+
+# Or watch all logs and filter for your app
+
+adb logcat | grep -E "(StepCounter|AndroidRuntime|salubris)"
+
+# Save logs to a file
+
+adb logcat -d > android_logs.txt

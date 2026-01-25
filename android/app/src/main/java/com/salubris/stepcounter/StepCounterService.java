@@ -31,7 +31,6 @@ public class StepCounterService extends Service implements SensorEventListener {
     private SharedPreferences prefs;
 
     // STEP_COUNTER specific variables
-    private float initialStepCount = -1;  // Initial step count when service starts
     private float lastStepCount = -1;     // Last recorded step count
     private int stepsToday = 0;           // Steps counted today
     private long currentDay = 0;          // Current day for reset tracking
@@ -40,7 +39,10 @@ public class StepCounterService extends Service implements SensorEventListener {
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "Service onCreate");
-
+        
+        // MUST call startForeground() FIRST before anything else
+        startForegroundService();
+        
         prefs = getSharedPreferences("step_counter_prefs", MODE_PRIVATE);
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
@@ -60,41 +62,10 @@ public class StepCounterService extends Service implements SensorEventListener {
 
         // Initialize sensor
         initializeStepCounter();
-        startForegroundService();
-    }
-
-    private void initializeStepCounter() {
-        stepCounterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
-
-        if (stepCounterSensor == null) {
-            Log.e(TAG, "STEP_COUNTER sensor not available on this device");
-            stopSelf();
-            return;
-        }
-
-        Log.d(TAG, "STEP_COUNTER sensor found: " + stepCounterSensor.getName());
-
-        // Try to get the last saved step counter value
-        float savedStepCounterValue = prefs.getFloat("last_sensor_value", -1);
-
-        // Register listener
-        boolean registered = sensorManager.registerListener(
-                this,
-                stepCounterSensor,
-                SensorManager.SENSOR_DELAY_NORMAL
-        );
-
-        if (registered) {
-            Log.d(TAG, "STEP_COUNTER sensor registered successfully");
-            Log.d(TAG, "Restored steps today: " + stepsToday);
-            Log.d(TAG, "Saved sensor value: " + savedStepCounterValue);
-        } else {
-            Log.e(TAG, "Failed to register STEP_COUNTER sensor");
-            stopSelf();
-        }
     }
 
     private void startForegroundService() {
+        // Create notification channel (required for Android 8.0+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
@@ -102,7 +73,10 @@ public class StepCounterService extends Service implements SensorEventListener {
                     NotificationManager.IMPORTANCE_LOW
             );
             channel.setDescription("Step counting service is running");
-            getSystemService(NotificationManager.class).createNotificationChannel(channel);
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
         }
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
@@ -113,12 +87,56 @@ public class StepCounterService extends Service implements SensorEventListener {
                 .setOngoing(true)
                 .build();
 
+        // CRITICAL: Must call startForeground() within 5 seconds of startForegroundService()
         startForeground(NOTIFICATION_ID, notification);
+        Log.d(TAG, "Foreground service started with notification");
+    }
+
+    private void initializeStepCounter() {
+        if (sensorManager == null) {
+            Log.e(TAG, "SensorManager is null");
+            return;
+        }
+        
+        stepCounterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+
+        if (stepCounterSensor == null) {
+            Log.e(TAG, "STEP_COUNTER sensor not available on this device");
+            // Don't stopSelf() - just log and keep service running
+            // Users might want to see 0 steps if sensor is unavailable
+            return;
+        }
+
+        Log.d(TAG, "STEP_COUNTER sensor found: " + stepCounterSensor.getName());
+
+        // Register listener
+        try {
+            boolean registered = sensorManager.registerListener(
+                    this,
+                    stepCounterSensor,
+                    SensorManager.SENSOR_DELAY_NORMAL
+            );
+
+            if (registered) {
+                Log.d(TAG, "STEP_COUNTER sensor registered successfully");
+            } else {
+                Log.e(TAG, "Failed to register STEP_COUNTER sensor");
+            }
+        } catch (SecurityException e) {
+            Log.e(TAG, "Permission denied for step counter sensor", e);
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering sensor listener", e);
+        }
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() != Sensor.TYPE_STEP_COUNTER) {
+            return;
+        }
+
+        if (event.values.length == 0) {
+            Log.w(TAG, "Sensor event has no values");
             return;
         }
 
@@ -128,25 +146,18 @@ public class StepCounterService extends Service implements SensorEventListener {
         // First reading after service start
         if (lastStepCount < 0) {
             lastStepCount = currentSensorValue;
-
-            // Check if we have a saved initial value
-            float savedInitial = prefs.getFloat("initial_sensor_value", -1);
+            
+            // Try to restore previous state
             float savedLast = prefs.getFloat("last_sensor_value", -1);
-
-            if (savedInitial >= 0 && savedLast >= 0) {
-                // Calculate steps since initial
-                stepsToday = (int)(currentSensorValue - savedInitial);
-                Log.d(TAG, "Calculated steps from saved initial: " + stepsToday);
+            if (savedLast >= 0) {
+                // Calculate steps since last saved value
+                stepsToday += (int)(currentSensorValue - savedLast);
+                if (stepsToday < 0) stepsToday = 0; // Handle sensor reset
             }
-
-            // Save initial value if not already saved
-            if (savedInitial < 0) {
-                prefs.edit().putFloat("initial_sensor_value", currentSensorValue).apply();
-            }
-
-            // Save current as last
-            prefs.edit().putFloat("last_sensor_value", currentSensorValue).apply();
-
+            
+            // Save initial state
+            saveState(currentSensorValue);
+            
             // Update notification and emit event
             updateNotification();
             StepCounterModule.sendStepEvent(stepsToday);
@@ -155,24 +166,18 @@ public class StepCounterService extends Service implements SensorEventListener {
 
         // Calculate steps since last reading
         float stepsDifference = currentSensorValue - lastStepCount;
-
-        // Handle sensor reset (device reboot)
+        
+        // Handle sensor reset (device reboot or sensor reset)
         if (stepsDifference < 0) {
-            Log.w(TAG, "Sensor reset detected (possibly device reboot). Current: " +
-                    currentSensorValue + ", Last: " + lastStepCount);
-
-            // Reset initial value to current
-            prefs.edit().putFloat("initial_sensor_value", currentSensorValue).apply();
+            Log.w(TAG, "Sensor reset detected. Current: " + currentSensorValue + ", Last: " + lastStepCount);
+            // Reset tracking
+            stepsToday = 0;
             lastStepCount = currentSensorValue;
-            stepsToday = 0; // Reset daily count as sensor was reset
-
-            Log.d(TAG, "Reset initial value to: " + currentSensorValue);
         } else {
             // Normal case: add the difference
-            stepsToday += stepsDifference;
+            stepsToday += (int) stepsDifference; // CAST to int
             lastStepCount = currentSensorValue;
-
-            Log.d(TAG, "Added " + stepsDifference + " steps. Total today: " + stepsToday);
+            Log.d(TAG, "Added " + (int)stepsDifference + " steps. Total today: " + stepsToday);
         }
 
         // Save state
@@ -191,9 +196,6 @@ public class StepCounterService extends Service implements SensorEventListener {
             Log.d(TAG, "Day changed. Resetting daily count.");
             stepsToday = 0;
             currentDay = today;
-
-            // Reset initial value for new day
-            prefs.edit().putFloat("initial_sensor_value", currentSensorValue).apply();
         }
 
         // Save to preferences
@@ -207,19 +209,17 @@ public class StepCounterService extends Service implements SensorEventListener {
     }
 
     private void updateNotification() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            if (notificationManager != null) {
-                Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                        .setContentTitle("Step Counter")
-                        .setContentText("Steps today: " + stepsToday)
-                        .setSmallIcon(android.R.drawable.ic_dialog_info)
-                        .setPriority(NotificationCompat.PRIORITY_LOW)
-                        .setOngoing(true)
-                        .build();
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        if (notificationManager != null) {
+            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setContentTitle("Step Counter")
+                    .setContentText("Steps today: " + stepsToday)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setOngoing(true)
+                    .build();
 
-                notificationManager.notify(NOTIFICATION_ID, notification);
-            }
+            notificationManager.notify(NOTIFICATION_ID, notification);
         }
     }
 
