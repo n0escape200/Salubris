@@ -30,6 +30,7 @@ import { database } from './src/DB/Database';
 import { checkSetting } from './src/Utils/Functions';
 import MainPager from './src/MainPager';
 import { PagerProvider } from './src/Utils/Contexts/PageContext';
+import InitialSetup from './src/Pages/InitialSetup';
 
 const { StepCounterModule } = NativeModules;
 const Stack = createNativeStackNavigator();
@@ -93,6 +94,7 @@ async function backfillTrackLines(database: Database) {
 
 function AppContent() {
   const [footerHeight, setFooterHeight] = useState(0);
+  const [currentRoute, setCurrentRoute] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -103,23 +105,38 @@ function AppContent() {
   return (
     <>
       <Notifications />
-      <NavigationContainer ref={navigationRef}>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="MainPager" component={MainPager} />
-        </Stack.Navigator>
-        {/* Dynamic padding based on actual footer height + small gap */}
-        <View style={{ height: footerHeight > 0 ? footerHeight : 60 }} />
-      </NavigationContainer>
-      {/* Footer with safe area padding */}
-      <View
-        style={{ paddingBottom: insets.bottom }}
-        onLayout={event => {
-          const { height } = event.nativeEvent.layout;
-          setFooterHeight(height);
+
+      <NavigationContainer
+        ref={navigationRef}
+        onReady={() => {
+          setCurrentRoute(navigationRef.getCurrentRoute()?.name ?? null);
+        }}
+        onStateChange={() => {
+          setCurrentRoute(navigationRef.getCurrentRoute()?.name ?? null);
         }}
       >
-        <Footer />
-      </View>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false }}
+          initialRouteName="MainPager"
+        >
+          <Stack.Screen name="MainPager" component={MainPager} />
+          <Stack.Screen name="InitialSetup" component={InitialSetup} />
+        </Stack.Navigator>
+
+        <View style={{ height: footerHeight > 0 ? footerHeight : 60 }} />
+      </NavigationContainer>
+
+      {currentRoute !== 'InitialSetup' && (
+        <View
+          style={{ paddingBottom: insets.bottom }}
+          onLayout={event => {
+            const { height } = event.nativeEvent.layout;
+            setFooterHeight(height);
+          }}
+        >
+          <Footer />
+        </View>
+      )}
     </>
   );
 }
