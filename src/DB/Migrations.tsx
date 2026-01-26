@@ -52,5 +52,19 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      toVersion: 6,
+      steps: [
+        {
+          type: 'sql',
+          sql: `
+            -- Update track_lines table to remove timestamps from date field
+            UPDATE track_lines 
+            SET date = substr(date, 1, 10)
+            WHERE date LIKE '____-__-__T__:__:__%'
+          `,
+        },
+      ],
+    },
   ],
 });

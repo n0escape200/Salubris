@@ -32,12 +32,15 @@ export default function MacroTracking() {
   const { addNotification } = useNotification();
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [date, setDate] = useState(new Date());
+  // Add this state to track the track line being edited
+  const [editingTrackLineId, setEditingTrackLineId] = useState<
+    string | undefined
+  >(undefined);
 
   async function createEntry() {
     try {
       await database.write(async () => {
         const productData = {
-          id: productForm.id,
           name: productForm.name,
           calories: productForm.calories,
           protein: productForm.protein,
@@ -45,7 +48,7 @@ export default function MacroTracking() {
           fats: productForm.fats,
         };
 
-        // Optionally, save the product if it has a name and doesn't exist
+        // Optionally, save the product if it doesn't exist
         if (!productForm.id && productForm.name.trim() !== '') {
           await database.get<Product>('products').create(p => {
             p.name = productData.name;
@@ -60,14 +63,15 @@ export default function MacroTracking() {
           });
         }
 
-        // UPDATE or CREATE track line
-        if (productForm.id) {
+        // Check if we're editing an existing track line
+        if (editingTrackLineId) {
+          // UPDATE existing track line
           const trackLine = await database
             .get<TrackLine>('track_lines')
-            .find(productForm.id);
+            .find(editingTrackLineId);
 
           await trackLine.update(tl => {
-            tl.date = new Date().toISOString().split('T')[0];
+            tl.date = date.toISOString().split('T')[0];
             tl.quantity = +quantity.value || 0;
             tl.unit = quantity.unit;
             tl.name = productData.name;
@@ -82,8 +86,9 @@ export default function MacroTracking() {
             message: `Track line updated successfully`,
           });
         } else {
+          // CREATE new track line
           await database.get<TrackLine>('track_lines').create(trackLine => {
-            trackLine.date = new Date().toISOString().split('T')[0];
+            trackLine.date = date.toISOString().split('T')[0];
             trackLine.quantity = +quantity.value || 0;
             trackLine.unit = quantity.unit;
             trackLine.name = productData.name;
@@ -103,22 +108,13 @@ export default function MacroTracking() {
       });
 
       setOpen(false);
-      setProductForm({
-        id: undefined,
-        name: '',
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fats: 0,
-      });
-      setQuantity({ value: '', unit: 'g' });
+      resetForm();
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
     }
   }
 
-  function reset() {
-    setOpen(false);
+  function resetForm() {
     setProductForm({
       id: undefined,
       name: '',
@@ -127,9 +123,17 @@ export default function MacroTracking() {
       carbs: 0,
       fats: 0,
     });
+    setQuantity({ value: '', unit: 'g' });
+    setEditingTrackLineId(undefined);
+  }
+
+  function reset() {
+    setOpen(false);
+    resetForm();
   }
 
   const trackContext = useContext(TrackingContext);
+
   return (
     <View style={styles.page}>
       <View style={styles.container}>
@@ -185,22 +189,25 @@ export default function MacroTracking() {
         >
           <FontAwesomeIcon size={25} color="#ffffffff" icon={faPlus} />
         </Pressable>
-        <Text style={styles.textxl}>
-          {`${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`}
-        </Text>
-        <CustomButton
-          label="Pick"
-          fontSize={13}
-          customStyle={{
-            marginTop: 0,
-            padding: 1,
-            paddingVertical: 2,
-            paddingHorizontal: 20,
-          }}
+        <Pressable
           onPress={() => {
             setOpenDatePicker(true);
           }}
-        />
+        >
+          <Text
+            style={[
+              styles.textxl,
+              {
+                backgroundColor: 'white',
+                color: 'black',
+                paddingHorizontal: 10,
+                borderRadius: 10,
+              },
+            ]}
+          >
+            {`${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`}
+          </Text>
+        </Pressable>
         <CustomButton
           label="Reset"
           fontSize={13}
@@ -226,14 +233,21 @@ export default function MacroTracking() {
               key={line.id}
               onPress={() => {
                 setOpen(true);
-                productForm.name = line.name;
-                productForm.id = line.id;
-                productForm.calories = line.calories;
-                productForm.carbs = line.carbs;
-                productForm.fats = line.fats;
-                productForm.protein = line.protein;
-                quantity.value = line.quantity.toString();
-                quantity.unit = line.unit;
+                // Set the track line ID for editing
+                setEditingTrackLineId(line.id);
+                // Set product form data
+                setProductForm({
+                  id: line.id || undefined,
+                  name: line.name,
+                  calories: line.calories,
+                  protein: line.protein,
+                  carbs: line.carbs,
+                  fats: line.fats,
+                });
+                setQuantity({
+                  value: line.quantity.toString(),
+                  unit: line.unit,
+                });
               }}
             >
               <TrackLineItem index={index} line={line} />

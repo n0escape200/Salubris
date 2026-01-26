@@ -127,8 +127,16 @@ export default function Products() {
         }
       });
 
-      trackingContext?.setUpdateLine(true);
+      trackingContext?.setUpdateLines(true);
       setOpenAdd(false);
+      setProductForm({
+        id: undefined,
+        name: '',
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fats: 0,
+      });
     } catch (error) {
       addNotification({ type: 'ERROR', message: String(error) });
     }
