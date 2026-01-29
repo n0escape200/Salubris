@@ -6,6 +6,7 @@ const Vocabulary = {
   products: 'Products',
   map: 'Map',
   user: 'User',
+  meals: 'Meals',
 };
 
 export default Vocabulary;

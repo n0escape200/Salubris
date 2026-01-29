@@ -6,6 +6,7 @@ import Products from './Pages/Products';
 import Tracking from './Pages/Tracking';
 import User from './Pages/User';
 import { PagerContext } from './Utils/Contexts/PageContext';
+import Meals from './Pages/Meals';
 
 export default function MainPager() {
   const pagerRef = useRef<PagerView>(null);
@@ -43,6 +44,9 @@ export default function MainPager() {
         <Products />
       </View>
       <View key="4" style={{ flex: 1 }}>
+        <Meals />
+      </View>
+      <View key="5" style={{ flex: 1 }}>
         <User />
       </View>
     </PagerView>

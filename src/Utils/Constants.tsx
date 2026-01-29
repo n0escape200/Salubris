@@ -1,4 +1,9 @@
-import { faCarrot, faHouse, faUser } from '@fortawesome/free-solid-svg-icons';
+import {
+  faBowlFood,
+  faCarrot,
+  faHouse,
+  faUser,
+} from '@fortawesome/free-solid-svg-icons';
 import Vocabulary from './Vocabulary';
 import { faClipboard } from '@fortawesome/free-solid-svg-icons/faClipboard';
 
@@ -19,6 +24,10 @@ export const footerItems = [
   //   label: Vocabulary.map,
   //   icon: faMap,
   // },
+  {
+    label: Vocabulary.meals,
+    icon: faBowlFood,
+  },
   {
     label: Vocabulary.user,
     icon: faUser,
