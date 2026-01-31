@@ -5,13 +5,14 @@ import {
   useState,
   Dispatch,
   SetStateAction,
+  useCallback,
+  useRef,
 } from 'react';
 import Product, { ProductType } from '../../DB/Models/Product';
 import { MacroModel } from '../Models';
 import { useNotification } from './NotificationContext';
 import { database } from '../../DB/Database';
 import TrackLine from '../../DB/Models/TrackLine';
-import { Q } from '@nozbe/watermelondb';
 
 type TrackingContextType = {
   macros: MacroModel;
@@ -20,12 +21,17 @@ type TrackingContextType = {
   todayLines: TrackLine[];
   thisWeekLines: TrackLine[];
   thisMonthLines: TrackLine[];
+  selectedDateLines: TrackLine[];
+  selectedDate: Date | null;
   setUpdateLines: Dispatch<SetStateAction<boolean>>;
+  setSelectedDate: Dispatch<SetStateAction<Date | null>>;
   addProductToTracking: (_product: ProductType, _amount: number) => void;
   removeProductFromTracking: (_product: ProductType, _amount: number) => void;
   removeProduct: (_product: Product) => Promise<number>;
   removeTrackLine: (_trackLine: TrackLine) => void;
-  getTrackLinesForDate: (_date: Date) => void;
+  getTrackLinesForDate: (_date: Date) => Promise<void>;
+  refreshTrackLines: () => Promise<void>;
+  resetToToday: () => void;
 };
 
 export const TrackingContext = createContext<TrackingContextType | undefined>(
@@ -36,6 +42,13 @@ type TrackingProviderProps = {
   children: ReactNode;
 };
 
+// Helper function to normalize dates for comparison
+const normalizeDate = (date: Date): string => {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized.toISOString().split('T')[0]; // Get just YYYY-MM-DD
+};
+
 export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   const { addNotification } = useNotification();
   const [macros, setMacros] = useState(new MacroModel());
@@ -44,29 +57,41 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   const [todayLines, setTodayLines] = useState<TrackLine[]>([]);
   const [thisMonthLines, setThisMonthLines] = useState<TrackLine[]>([]);
   const [thisWeekLines, setThisWeekLines] = useState<TrackLine[]>([]);
+  const [selectedDateLines, setSelectedDateLines] = useState<TrackLine[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [updateLines, setUpdateLines] = useState(true);
 
-  function addProductToTracking(_product: ProductType, _amount: number) {
-    const factor = _amount / 100;
-    setMacros(prev => ({
-      calories: prev.calories + _product.calories * factor,
-      protein: prev.protein + _product.protein * factor,
-      carbs: prev.carbs + _product.carbs * factor,
-      fats: prev.fats + _product.fats * factor,
-    }));
-  }
+  // Use refs to track previous values and prevent infinite loops
+  const isInitialMount = useRef(true);
+  const prevSelectedDate = useRef<Date | null>(null);
 
-  function removeProductFromTracking(_product: ProductType, _amount: number) {
-    const factor = _amount / 100;
-    setMacros(prev => ({
-      calories: prev.calories - _product.calories * factor,
-      protein: prev.protein - _product.protein * factor,
-      carbs: prev.carbs - _product.carbs * factor,
-      fats: prev.fats - _product.fats * factor,
-    }));
-  }
+  const addProductToTracking = useCallback(
+    (_product: ProductType, _amount: number) => {
+      const factor = _amount / 100;
+      setMacros(prev => ({
+        calories: prev.calories + _product.calories * factor,
+        protein: prev.protein + _product.protein * factor,
+        carbs: prev.carbs + _product.carbs * factor,
+        fats: prev.fats + _product.fats * factor,
+      }));
+    },
+    [],
+  );
 
-  async function getProducts() {
+  const removeProductFromTracking = useCallback(
+    (_product: ProductType, _amount: number) => {
+      const factor = _amount / 100;
+      setMacros(prev => ({
+        calories: prev.calories - _product.calories * factor,
+        protein: prev.protein - _product.protein * factor,
+        carbs: prev.carbs - _product.carbs * factor,
+        fats: prev.fats - _product.fats * factor,
+      }));
+    },
+    [],
+  );
+
+  const getProducts = useCallback(async () => {
     try {
       const allProducts = await database
         .get<Product>('products')
@@ -76,145 +101,191 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
     } catch (error) {
       addNotification({ type: 'ERROR', message: `${error}` });
     }
-  }
+  }, [addNotification]);
 
-  async function getTrackLines() {
-    try {
-      const allTrackLines = await database
-        .get<TrackLine>('track_lines')
-        .query()
-        .fetch();
-      const normalizedAll = Array.isArray(allTrackLines) ? allTrackLines : [];
+  const refreshTrackLines = useCallback(
+    async (forceToday: boolean = false) => {
+      try {
+        const allTrackLines = await database
+          .get<TrackLine>('track_lines')
+          .query()
+          .fetch();
+        const normalizedAll = Array.isArray(allTrackLines) ? allTrackLines : [];
 
-      const now = new Date();
-      const todayString = now.toISOString().split('T')[0];
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
+        const now = new Date();
+        const todayNormalized = normalizeDate(now);
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
 
-      const linesForToday = normalizedAll.filter(
-        line => line.date.split('T')[0] === todayString,
-      );
-
-      const linesForThisMonth = normalizedAll.filter(line => {
-        const d = new Date(line.date);
-        return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
-      });
-
-      const firstDayOfWeek = new Date(now);
-      firstDayOfWeek.setHours(0, 0, 0, 0);
-      firstDayOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-      const lastDayOfWeek = new Date(firstDayOfWeek);
-      lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
-
-      const linesForThisWeek = normalizedAll.filter(line => {
-        const d = new Date(line.date);
-        return d >= firstDayOfWeek && d <= lastDayOfWeek;
-      });
-
-      setTrackLines(linesForToday);
-      setTodayLines(linesForToday);
-      setThisWeekLines(linesForThisWeek);
-      setThisMonthLines(linesForThisMonth);
-
-      // Compute today's macros
-      const todayMacros = linesForToday.reduce<MacroModel>((acc, line) => {
-        if (!line) return acc;
-        const factor = line.quantity / 100;
-        return {
-          calories: acc.calories + (line.calories || 0) * factor,
-          protein: acc.protein + (line.protein || 0) * factor,
-          carbs: acc.carbs + (line.carbs || 0) * factor,
-          fats: acc.fats + (line.fats || 0) * factor,
-        };
-      }, new MacroModel());
-
-      setMacros(todayMacros);
-    } catch (error) {
-      addNotification({ type: 'ERROR', message: `${error}` });
-      setTrackLines([]);
-      setTodayLines([]);
-      setThisMonthLines([]);
-      setMacros(new MacroModel());
-    }
-  }
-
-  async function removeProduct(_product: Product): Promise<number> {
-    try {
-      return await database.write(async () => {
-        const productCollection = database.get<Product>('products');
-        const productRecord = await productCollection.find(_product.id);
-        await productRecord.markAsDeleted();
-
-        setProducts(prev => prev.filter(prod => prod.id !== _product.id));
-        return 1; // success
-      });
-    } catch (error) {
-      console.error('Error deleting product:', error);
-      return 0; // failure
-    }
-  }
-
-  async function removeTrackLine(_trackLine: TrackLine) {
-    try {
-      await database.write(async () => {
-        await _trackLine.markAsDeleted();
-
-        setTrackLines(prev => prev.filter(line => line.id !== _trackLine.id));
-        setTodayLines(prev => prev.filter(line => line.id !== _trackLine.id));
-        setThisWeekLines(prev =>
-          prev.filter(line => line.id !== _trackLine.id),
-        );
-        setThisMonthLines(prev =>
-          prev.filter(line => line.id !== _trackLine.id),
+        // Calculate time-based filtered lines
+        const linesForToday = normalizedAll.filter(
+          line => normalizeDate(new Date(line.date)) === todayNormalized,
         );
 
-        const factor = _trackLine.quantity / 100;
-        setMacros(prev => ({
-          calories: prev.calories - (_trackLine.calories || 0) * factor,
-          protein: prev.protein - (_trackLine.protein || 0) * factor,
-          carbs: prev.carbs - (_trackLine.carbs || 0) * factor,
-          fats: prev.fats - (_trackLine.fats || 0) * factor,
-        }));
-      });
-    } catch (error) {
-      addNotification({ type: 'ERROR', message: `${error}` });
-    }
-  }
+        const linesForThisMonth = normalizedAll.filter(line => {
+          const d = new Date(line.date);
+          return (
+            d.getFullYear() === currentYear && d.getMonth() === currentMonth
+          );
+        });
 
-  async function getTrackLinesForDate(date: Date) {
-    try {
-      const formatDate = date.toISOString().split('T')[0];
+        const firstDayOfWeek = new Date(now);
+        firstDayOfWeek.setHours(0, 0, 0, 0);
+        firstDayOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+        const lastDayOfWeek = new Date(firstDayOfWeek);
+        lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
 
-      const dateLines = await database
-        .get<TrackLine>('track_lines')
-        .query(Q.where('date', formatDate))
-        .fetch();
+        const linesForThisWeek = normalizedAll.filter(line => {
+          const d = new Date(line.date);
+          return d >= firstDayOfWeek && d <= lastDayOfWeek;
+        });
 
-      const macros = new MacroModel();
+        // Update time-based filtered lines
+        setTodayLines(linesForToday);
+        setThisWeekLines(linesForThisWeek);
+        setThisMonthLines(linesForThisMonth);
 
-      for (const line of dateLines) {
-        macros.calories += line.calories;
-        macros.carbs += line.carbs;
-        macros.fats += line.fats;
-        macros.protein += line.protein;
+        // If a date is selected and we're not forcing today view, update selected date
+        if (selectedDate && !forceToday) {
+          const targetDateNormalized = normalizeDate(selectedDate);
+          const dateLines = normalizedAll.filter(
+            line => normalizeDate(new Date(line.date)) === targetDateNormalized,
+          );
+
+          setSelectedDateLines(dateLines);
+          setTrackLines(dateLines);
+
+          // Calculate macros for selected date
+          const dateMacros = dateLines.reduce<MacroModel>((acc, line) => {
+            if (!line) return acc;
+            const factor = line.quantity / 100;
+            return {
+              calories: acc.calories + (line.calories || 0) * factor,
+              protein: acc.protein + (line.protein || 0) * factor,
+              carbs: acc.carbs + (line.carbs || 0) * factor,
+              fats: acc.fats + (line.fats || 0) * factor,
+            };
+          }, new MacroModel());
+
+          setMacros(dateMacros);
+        } else {
+          // Show today's lines and calculate today's macros
+          setTrackLines(linesForToday);
+
+          const todayMacros = linesForToday.reduce<MacroModel>((acc, line) => {
+            if (!line) return acc;
+            const factor = line.quantity / 100;
+            return {
+              calories: acc.calories + (line.calories || 0) * factor,
+              protein: acc.protein + (line.protein || 0) * factor,
+              carbs: acc.carbs + (line.carbs || 0) * factor,
+              fats: acc.fats + (line.fats || 0) * factor,
+            };
+          }, new MacroModel());
+
+          setMacros(todayMacros);
+        }
+      } catch (error) {
+        addNotification({ type: 'ERROR', message: `${error}` });
+        setTrackLines([]);
+        setTodayLines([]);
+        setThisMonthLines([]);
+        setThisWeekLines([]);
+        setSelectedDateLines([]);
+        setMacros(new MacroModel());
       }
+    },
+    [addNotification, selectedDate],
+  ); // Only depends on selectedDate
 
-      setMacros(macros);
-      setTrackLines(dateLines);
-    } catch (error) {
-      addNotification({ type: 'ERROR', message: `${error}` });
-    }
-  }
+  const getTrackLinesForDate = useCallback(
+    async (date: Date) => {
+      try {
+        const targetDate = new Date(date);
+        setSelectedDate(targetDate);
 
+        // We'll let refreshTrackLines handle the actual data fetching
+        // to avoid duplicate logic and state updates
+        await refreshTrackLines();
+      } catch (error) {
+        addNotification({ type: 'ERROR', message: `${error}` });
+      }
+    },
+    [addNotification, refreshTrackLines],
+  );
+
+  const resetToToday = useCallback(() => {
+    setSelectedDate(null);
+    refreshTrackLines(true); // Force today view
+  }, [refreshTrackLines]);
+
+  const removeProduct = useCallback(
+    async (_product: Product): Promise<number> => {
+      try {
+        return await database.write(async () => {
+          const productCollection = database.get<Product>('products');
+          const productRecord = await productCollection.find(_product.id);
+          await productRecord.markAsDeleted();
+
+          setProducts(prev => prev.filter(prod => prod.id !== _product.id));
+          return 1; // success
+        });
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        return 0; // failure
+      }
+    },
+    [],
+  );
+
+  const removeTrackLine = useCallback(
+    async (_trackLine: TrackLine) => {
+      try {
+        await database.write(async () => {
+          await _trackLine.markAsDeleted();
+
+          // Refresh all data after deletion
+          await refreshTrackLines();
+        });
+      } catch (error) {
+        addNotification({ type: 'ERROR', message: `${error}` });
+      }
+    },
+    [addNotification, refreshTrackLines],
+  );
+
+  // Initial load and when updateLines changes
   useEffect(() => {
     if (!updateLines) return;
+
     const setup = async () => {
-      await getTrackLines();
       await getProducts();
+      await refreshTrackLines();
       setUpdateLines(false);
     };
+
     setup();
-  }, [updateLines]);
+  }, [updateLines, getProducts, refreshTrackLines]);
+
+  // Handle selectedDate changes - refresh data when selectedDate changes
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    // Only refresh if selectedDate actually changed
+    const currentDateStr = selectedDate ? normalizeDate(selectedDate) : null;
+    const prevDateStr = prevSelectedDate.current
+      ? normalizeDate(prevSelectedDate.current)
+      : null;
+
+    if (currentDateStr !== prevDateStr) {
+      refreshTrackLines();
+    }
+
+    prevSelectedDate.current = selectedDate;
+  }, [selectedDate, refreshTrackLines]);
 
   return (
     <TrackingContext.Provider
@@ -225,12 +296,17 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         todayLines,
         thisWeekLines,
         thisMonthLines,
+        selectedDateLines,
+        selectedDate,
         setUpdateLines,
+        setSelectedDate,
         addProductToTracking,
         removeProductFromTracking,
         removeProduct,
         removeTrackLine,
         getTrackLinesForDate,
+        refreshTrackLines,
+        resetToToday,
       }}
     >
       {children}

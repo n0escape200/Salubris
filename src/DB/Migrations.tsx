@@ -66,5 +66,17 @@ export const migrations = schemaMigrations({
         },
       ],
     },
+    {
+      toVersion: 7,
+      steps: [
+        createTable({
+          name: 'meals',
+          columns: [
+            { name: 'field', type: 'string' },
+            { name: 'value', type: 'string' },
+          ],
+        }),
+      ],
+    },
   ],
 });

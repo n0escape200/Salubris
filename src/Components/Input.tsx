@@ -4,7 +4,13 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import { TextInput, TextInputSubmitEditingEvent, View } from 'react-native';
+import {
+  StyleProp,
+  TextInput,
+  TextInputSubmitEditingEvent,
+  View,
+  ViewStyle,
+} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,6 +25,7 @@ type InputProps = {
   backgroundColor?: string;
   type?: 'number' | undefined;
   onSubmit?: (e: TextInputSubmitEditingEvent) => void;
+  style?: StyleProp<ViewStyle>;
 };
 
 export default forwardRef(function Input(
@@ -30,6 +37,7 @@ export default forwardRef(function Input(
     onSubmit,
     backgroundColor = 'black',
     type,
+    style,
   }: InputProps,
   ref,
 ) {
@@ -45,7 +53,7 @@ export default forwardRef(function Input(
 
   useEffect(() => {
     const isActive = isFocused || value.length > 0;
-    top.value = withTiming(isActive ? -10 : 12, { duration: 200 });
+    top.value = withTiming(isActive ? -10 : 8, { duration: 200 });
     left.value = withTiming(12, { duration: 200 });
     paddingHorizontal.value = withTiming(isActive ? 6 : 0, { duration: 200 });
   }, [isFocused, value]);
@@ -69,7 +77,7 @@ export default forwardRef(function Input(
   }));
 
   return (
-    <View style={{ position: 'relative', marginTop: 5 }}>
+    <View style={[{ position: 'relative', marginTop: 5 }, style]}>
       <TextInput
         style={{
           color: 'white',
@@ -77,7 +85,6 @@ export default forwardRef(function Input(
           borderWidth: 0.5,
           borderRadius: 5,
           padding: 10,
-          paddingTop: 18,
           backgroundColor,
         }}
         keyboardType={type === 'number' ? 'numeric' : 'default'}

@@ -1,5 +1,13 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Pressable, Text, TextInput, View, StyleSheet } from 'react-native';
+import {
+  Pressable,
+  Text,
+  TextInput,
+  View,
+  StyleSheet,
+  StyleProp,
+  ViewStyle,
+} from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { styles } from '../Utils/Styles';
 
@@ -12,6 +20,7 @@ type AutocompleteProps = {
   onChange?: (value: any) => void;
   initValue?: string;
   textInputStyle?: any;
+  style?: StyleProp<ViewStyle>;
 };
 
 export default function Autocomplete({
@@ -21,6 +30,7 @@ export default function Autocomplete({
   onChange,
   initValue,
   textInputStyle,
+  style,
 }: AutocompleteProps) {
   const [value, setValue] = useState(initValue ?? '');
   const [isOpen, setIsOpen] = useState(false);
@@ -51,7 +61,7 @@ export default function Autocomplete({
   };
 
   return (
-    <View>
+    <View style={style}>
       <TextInput
         ref={inputRef}
         style={[styles.input, textInputStyle]}
