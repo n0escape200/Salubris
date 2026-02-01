@@ -9,11 +9,16 @@ import {
   Linking,
   ScrollView,
   Text,
-  TouchableWithoutFeedback,
+  Pressable,
   View,
+  ActivityIndicator,
 } from 'react-native';
 import { styles } from '../Utils/Styles';
-import Divider from './Divider';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import {
+  faDatabase,
+  faExternalLinkAlt,
+} from '@fortawesome/free-solid-svg-icons';
 
 type ImportProductProps = {
   open: boolean;
@@ -29,17 +34,19 @@ export default function ImportProduct({
   const { addNotification } = useNotification();
   const { height } = Dimensions.get('window');
   const [product, setProduct] = useState('');
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isNoData, setIsNotData] = useState(false);
-  const maxScrollHeight = height * 0.6;
+  const maxScrollHeight = height * 0.5;
 
   function getMacro(product: any, macro: string): number {
     const value = (product.foodNutrients as Array<any>).filter(value =>
-      (value.nutrientName as string).includes(macro),
+      (value.nutrientName as string)
+        .toLowerCase()
+        .includes(macro.toLowerCase()),
     );
     if (value.length >= 1) {
-      return value[0].value;
+      return value[0].value || 0;
     }
     return 0;
   }
@@ -51,141 +58,215 @@ export default function ImportProduct({
   }, [data]);
 
   async function handleProductSearch() {
-    try {
-      await axios.get(getApiUrl(product)).then(data => {
-        console.log(data.data);
-        if (data.data.foods.length > 0) {
-          setData(data.data.foods);
-        } else {
-          setIsNotData(true);
-          setIsLoading(false);
-        }
+    if (!product.trim()) {
+      addNotification({
+        type: 'ERROR',
+        message: 'Please enter a product name',
       });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setIsNotData(false);
+      setData([]);
+
+      const response = await axios.get(getApiUrl(product));
+
+      if (response.data.foods?.length > 0) {
+        setData(response.data.foods);
+      } else {
+        setIsNotData(true);
+      }
     } catch (error) {
-      addNotification({ type: 'ERROR', message: `${error}` });
+      addNotification({
+        type: 'ERROR',
+        message: 'Failed to fetch product data. Please try again.',
+      });
+    } finally {
+      setIsLoading(false);
     }
   }
 
   function handleExportData(productId: number) {
-    const product: any = data.filter((p: any) => p.fdcId === productId)[0];
-    console.log(product);
+    const product = data.find((p: any) => p.fdcId === productId);
+    if (!product) return;
+
     setExportData({
       name: product.description,
       calories: getMacro(product, 'Energy'),
       protein: getMacro(product, 'Protein'),
       carbs: getMacro(product, 'Carbohydrate'),
-      fats: getMacro(product, 'fat'),
+      fats: getMacro(product, 'Total lipid'),
     });
-    setData([]);
-    setProduct('');
+
+    resetState();
     onClose();
   }
+
+  function resetState() {
+    setData([]);
+    setProduct('');
+    setIsLoading(false);
+    setIsNotData(false);
+  }
+
+  const handleClose = () => {
+    resetState();
+    onClose();
+  };
+
   return (
-    <CustomModal
-      open={open}
-      onClose={() => {
-        onClose();
-        setData([]);
-        setProduct('');
-        setIsLoading(false);
-        setIsNotData(false);
-      }}
-    >
-      <View
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          marginBottom: 13,
-        }}
-      >
-        <Text style={{ color: 'white' }}>Using data from </Text>
-        <Text
-          style={{ color: '#2e7fe7ff' }}
-          onPress={() => Linking.openURL('https://fdc.nal.usda.gov')}
-        >
-          U.S. Department of Agriculture
+    <CustomModal title="Import Product" open={open} onClose={handleClose}>
+      {/* Data Source Info */}
+      <View style={styles.dataSourceInfo}>
+        <FontAwesomeIcon icon={faDatabase} size={16} color="#4FC3F7" />
+        <Text style={styles.dataSourceText}>
+          Data sourced from{' '}
+          <Text
+            style={styles.dataSourceLink}
+            onPress={() => Linking.openURL('https://fdc.nal.usda.gov')}
+          >
+            U.S. Department of Agriculture
+          </Text>
         </Text>
       </View>
-      <Input
-        label="Product"
-        validate
-        value={product}
-        onChange={value => {
-          setProduct(value);
-        }}
-        onSubmit={() => {
-          setData([]);
-          handleProductSearch();
-          setIsLoading(true);
-          setIsNotData(false);
-        }}
-      />
-      <ScrollView
-        style={{
-          ...styles.container,
-          marginTop: 20,
-          maxHeight: maxScrollHeight,
-        }}
-      >
-        {isLoading && <Text style={{ color: 'white' }}>Loading...</Text>}
-        {isNoData && <Text style={{ color: 'white' }}>No data</Text>}
-        {data.length > 0 && (
+
+      {/* Search Input */}
+      <View style={styles.searchSection}>
+        <Input
+          placeholder="Search products (e.g., 'apple', 'chicken breast')"
+          value={product}
+          onChange={setProduct}
+          onSubmit={handleProductSearch}
+          returnKeyType="search"
+          blurOnSubmit={false}
+        />
+
+        <Pressable
+          style={[
+            styles.searchButton,
+            (!product.trim() || isLoading) && styles.searchButtonDisabled,
+          ]}
+          onPress={handleProductSearch}
+          disabled={!product.trim() || isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.searchButtonText}>Search</Text>
+          )}
+        </Pressable>
+      </View>
+
+      {/* Results */}
+      <View style={styles.resultsContainer}>
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#2196F3" />
+            <Text style={styles.loadingText}>Searching for products...</Text>
+          </View>
+        ) : isNoData ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>No products found</Text>
+            <Text style={styles.emptyStateText}>
+              Try a different search term or check your spelling
+            </Text>
+          </View>
+        ) : data.length > 0 ? (
           <>
-            {data.map((product: any, index) => {
-              return (
-                <TouchableWithoutFeedback
-                  key={index}
-                  onPress={() => {
-                    handleExportData(product.fdcId);
-                  }}
-                >
-                  <View
-                    style={{
-                      backgroundColor: '#727272ff',
-                      marginBottom: 20,
-                      padding: 10,
-                      borderRadius: 15,
-                    }}
-                  >
-                    <Text style={{ color: 'white', fontSize: 15 }}>
-                      {(product.description as string).length > 40
-                        ? `${(product.description as string).slice(0, 40)}...`
-                        : product.description}
-                    </Text>
-                    <Divider />
-                    <View
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        gap: 10,
-                        flexWrap: 'wrap',
-                      }}
+            <View style={styles.resultsHeader}>
+              <Text style={styles.resultsCount}>
+                {data.length} product{data.length !== 1 ? 's' : ''} found
+              </Text>
+              <Pressable style={styles.clearButton} onPress={() => setData([])}>
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView
+              style={{ maxHeight: maxScrollHeight }}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.productsList}>
+                {data.map((product: any, index) => {
+                  const calories = getMacro(product, 'Energy');
+                  const protein = getMacro(product, 'Protein');
+                  const carbs = getMacro(product, 'Carbohydrate');
+                  const fats = getMacro(product, 'Total lipid');
+
+                  return (
+                    <Pressable
+                      key={product.fdcId}
+                      style={styles.productCard}
+                      onPress={() => handleExportData(product.fdcId)}
                     >
-                      <Text style={{ color: 'white' }}>{`Kcal:${getMacro(
-                        product,
-                        'Energy',
-                      )}`}</Text>
-                      <Text style={{ color: 'white' }}>{`Protein:${getMacro(
-                        product,
-                        'Protein',
-                      )}`}</Text>
-                      <Text style={{ color: 'white' }}>{`Carbs:${getMacro(
-                        product,
-                        'Carbohydrate',
-                      )}`}</Text>
-                      <Text style={{ color: 'white' }}>{`Fat:${getMacro(
-                        product,
-                        'fat',
-                      )}`}</Text>
-                    </View>
-                  </View>
-                </TouchableWithoutFeedback>
-              );
-            })}
+                      <View style={styles.productHeader}>
+                        <Text style={styles.productName} numberOfLines={2}>
+                          {product.description}
+                        </Text>
+                        <FontAwesomeIcon
+                          icon={faExternalLinkAlt}
+                          size={14}
+                          color="#2196F3"
+                        />
+                      </View>
+
+                      <View style={styles.productMacros}>
+                        <View style={styles.macroItem}>
+                          <Text style={styles.macroValue}>
+                            {calories.toFixed(0)}
+                          </Text>
+                          <Text style={styles.macroLabel}>Calories</Text>
+                        </View>
+
+                        <View style={styles.macroDivider} />
+
+                        <View style={styles.macroItem}>
+                          <Text style={styles.macroValue}>
+                            {protein.toFixed(1)}
+                          </Text>
+                          <Text style={styles.macroLabel}>Protein</Text>
+                        </View>
+
+                        <View style={styles.macroDivider} />
+
+                        <View style={styles.macroItem}>
+                          <Text style={styles.macroValue}>
+                            {carbs.toFixed(1)}
+                          </Text>
+                          <Text style={styles.macroLabel}>Carbs</Text>
+                        </View>
+
+                        <View style={styles.macroDivider} />
+
+                        <View style={styles.macroItem}>
+                          <Text style={styles.macroValue}>
+                            {fats.toFixed(1)}
+                          </Text>
+                          <Text style={styles.macroLabel}>Fats</Text>
+                        </View>
+                      </View>
+
+                      <Text style={styles.productHint}>
+                        Tap to import → per 100g
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
           </>
+        ) : (
+          <View style={styles.initialState}>
+            <Text style={styles.initialStateTitle}>Search USDA Database</Text>
+            <Text style={styles.initialStateText}>
+              Enter a product name above to search the USDA FoodData Central
+              database
+            </Text>
+          </View>
         )}
-      </ScrollView>
+      </View>
     </CustomModal>
   );
 }

@@ -7,13 +7,13 @@ import {
   Text,
   View,
 } from 'react-native';
-import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import {
   faBarcode,
   faFileImport,
   faPlus,
   faX,
+  faSearch,
 } from '@fortawesome/free-solid-svg-icons';
 import Input from '../Components/Input';
 import ItemList from '../Components/ItemList';
@@ -36,12 +36,11 @@ import axios from 'axios';
 import { getLatestMacros } from '../Utils/Functions';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
+import { styles } from '../Utils/Styles';
 
 export default function Products() {
   const camera = useRef<Camera>(null);
   const focusingRef = useRef(false);
-  const autocompleteRef = useRef<any>(null);
-
   const { addNotification } = useNotification();
   const { hasPermission, requestPermission } = useCameraPermission();
   const trackingContext = useContext(TrackingContext);
@@ -49,6 +48,17 @@ export default function Products() {
   const [openImport, setOpenImport] = useState(false);
   const [openAdd, setOpenAdd] = useState(false);
   const [openCamera, setOpenCamera] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [products, setProducts] = useState<Array<Product>>([]);
+  const [isScannig, setIsScanning] = useState(false);
+  const [patchProduct, setPatchProduct] = useState<ProductType | null>(null);
+  const [exportData, setExportData] = useState({
+    name: '',
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fats: 0,
+  });
 
   const [productForm, setProductForm] = useState<ProductType>({
     id: undefined,
@@ -59,22 +69,10 @@ export default function Products() {
     fats: 0,
   });
 
-  const [exportData, setExportData] = useState({
-    name: '',
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fats: 0,
-  });
-
-  const [patchProduct, setPatchProduct] = useState<ProductType | null>(null);
-
-  const [products, setProducts] = useState<Array<Product>>([]);
-  const [isScannig, setIsScanning] = useState(false);
   const device = useCameraDevice('back');
   const window = Dimensions.get('window');
 
-  /* -------------------- Import autofill -------------------- */
+  /* -------------------- Effects -------------------- */
 
   useEffect(() => {
     if (exportData.name && !openAdd) {
@@ -85,9 +83,33 @@ export default function Products() {
 
   useEffect(() => {
     if (trackingContext?.products) {
-      setProducts(trackingContext?.products);
+      setProducts(trackingContext.products);
     }
   }, [trackingContext]);
+
+  useEffect(() => {
+    if (patchProduct?.id !== undefined) {
+      setProductForm({
+        id: patchProduct.id,
+        name: patchProduct.name,
+        calories: patchProduct.calories,
+        protein: patchProduct.protein,
+        carbs: patchProduct.carbs,
+        fats: patchProduct.fats,
+      });
+    }
+  }, [patchProduct]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setProducts(trackingContext?.products || []);
+    } else {
+      const results = trackingContext?.products.filter(product =>
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+      setProducts(results || []);
+    }
+  }, [searchQuery, trackingContext?.products]);
 
   /* -------------------- Database -------------------- */
 
@@ -128,15 +150,7 @@ export default function Products() {
       });
 
       trackingContext?.setUpdateLines(true);
-      setOpenAdd(false);
-      setProductForm({
-        id: undefined,
-        name: '',
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fats: 0,
-      });
+      resetData();
     } catch (error) {
       addNotification({ type: 'ERROR', message: String(error) });
     }
@@ -145,7 +159,14 @@ export default function Products() {
   /* -------------------- Camera -------------------- */
 
   async function handleOpenCamera() {
-    if (!hasPermission) await requestPermission();
+    if (!hasPermission) {
+      const granted = await requestPermission();
+      if (!granted) {
+        addNotification({ type: 'ERROR', message: 'Camera permission denied' });
+        return;
+      }
+    }
+
     if (!device) {
       addNotification({ type: 'ERROR', message: 'No camera detected' });
       return;
@@ -252,11 +273,12 @@ export default function Products() {
       runOnJS(focus)({ x, y });
     });
 
-  /* -------------------- Render -------------------- */
+  /* -------------------- Helper Functions -------------------- */
 
   const resetData = () => {
     setOpenAdd(false);
     setIsScanning(false);
+    setSearchQuery('');
     setExportData({
       name: '',
       calories: 0,
@@ -275,175 +297,210 @@ export default function Products() {
     setPatchProduct(null);
   };
 
-  useEffect(() => {
-    if (patchProduct?.id !== undefined) {
-      setProductForm(prev => ({
-        ...prev,
-        name: patchProduct.name,
-        calories: patchProduct.calories,
-        protein: patchProduct.protein,
-        carbs: patchProduct.carbs,
-        fats: patchProduct.fats,
-      }));
-    }
-  }, [patchProduct]);
+  const handleEditProduct = (product: Product) => {
+    setPatchProduct(product);
+    setOpenAdd(true);
+  };
 
   return (
-    <View style={styles.page}>
+    <View style={productStyles.page}>
       {/* Header */}
-      <View style={{ flexDirection: 'row', gap: 20, alignItems: 'center' }}>
-        <Text style={styles.textxl}>Products:</Text>
+      <View style={productStyles.sectionHeader}>
+        <Text style={productStyles.sectionTitle}>Products</Text>
+        <Text style={productStyles.sectionSubtitle}>
+          {products.length} items available
+        </Text>
+      </View>
 
+      {/* Search Bar */}
+      <View style={productStyles.searchContainer}>
+        <View style={productStyles.searchInputContainer}>
+          <FontAwesomeIcon
+            icon={faSearch}
+            size={18}
+            color="#888"
+            style={productStyles.searchIcon}
+          />
+          <Input
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={setSearchQuery}
+            style={productStyles.searchInput}
+            backgroundColor="#2a2a2a"
+          />
+        </View>
+      </View>
+
+      {/* Action Buttons */}
+      <View style={productStyles.actionButtonsContainer}>
         <Pressable
           onPress={() => setOpenAdd(true)}
-          style={{ backgroundColor: '#3a3a3a', padding: 6, borderRadius: 50 }}
+          style={[productStyles.actionButton, productStyles.addButton]}
         >
-          <FontAwesomeIcon icon={faPlus} color="white" />
+          <FontAwesomeIcon icon={faPlus} size={20} color="#fff" />
+          <Text style={productStyles.buttonText}>Add New</Text>
         </Pressable>
 
         <Pressable
           onPress={() => setOpenImport(true)}
-          style={{ backgroundColor: '#3a3a3a', padding: 8, borderRadius: 15 }}
+          style={[productStyles.actionButton, productStyles.importButton]}
         >
-          <FontAwesomeIcon icon={faFileImport} color="white" />
+          <FontAwesomeIcon icon={faFileImport} size={20} color="#fff" />
+          <Text style={productStyles.buttonText}>Import</Text>
         </Pressable>
 
         <Pressable
           onPress={handleOpenCamera}
-          style={{ backgroundColor: '#3a3a3a', padding: 8, borderRadius: 15 }}
+          style={[productStyles.actionButton, productStyles.scanButton]}
         >
-          <FontAwesomeIcon icon={faBarcode} color="white" />
+          <FontAwesomeIcon icon={faBarcode} size={20} color="#fff" />
+          <Text style={productStyles.buttonText}>Scan</Text>
         </Pressable>
       </View>
 
-      {/* Filters */}
-      <View style={styles.container}>
-        <Input
-          label="Search"
-          onChange={e => {
-            if (e !== '') {
-              const results = trackingContext?.products.filter(product =>
-                product.name
-                  .toLocaleLowerCase()
-                  .includes(e.toLocaleLowerCase()),
-              );
-              setProducts(results || []);
-            } else {
-              setProducts(trackingContext?.products || []);
-            }
-          }}
-          backgroundColor="#1c1c1c"
-        />
-        {/* <Dropdown options={['test1', 'test2', 'test3', 'test4']} /> */}
-      </View>
-
-      {/* Product list */}
-      <ScrollView style={[styles.container, { padding: 10 }]}>
-        <View style={{ gap: 10 }}>
-          {products.map((product, index) => (
-            <Pressable
-              onPress={() => {
-                setOpenAdd(true);
-                setPatchProduct(product);
-              }}
-              key={index}
-            >
-              <ItemList product={product} />
-            </Pressable>
-          ))}
-        </View>
+      {/* Product List */}
+      <ScrollView
+        style={productStyles.productsListContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {products.length === 0 ? (
+          <View style={productStyles.emptyState}>
+            <Text style={productStyles.emptyStateTitle}>
+              {searchQuery ? 'No products found' : 'No products yet'}
+            </Text>
+            <Text style={productStyles.emptyStateText}>
+              {searchQuery
+                ? 'Try a different search term'
+                : 'Add your first product using the buttons above'}
+            </Text>
+          </View>
+        ) : (
+          <View style={productStyles.productsGrid}>
+            {products.map(product => (
+              <Pressable
+                key={product.id}
+                onPress={() => handleEditProduct(product)}
+                style={({ pressed }) => ({
+                  opacity: pressed ? 0.8 : 1,
+                })}
+              >
+                <ItemList product={product} />
+              </Pressable>
+            ))}
+          </View>
+        )}
       </ScrollView>
 
-      {/* Import modal */}
+      {/* Import Modal */}
       <ImportProduct
         open={openImport}
         onClose={() => setOpenImport(false)}
         setExportData={setExportData}
       />
 
-      {/* Add product modal */}
+      {/* Add/Edit Product Modal */}
       <CustomModal
-        title={patchProduct?.id ? 'Update prodcut' : 'Add product'}
+        title={patchProduct?.id ? 'Edit Product' : 'Add New Product'}
         open={openAdd}
         onClose={resetData}
       >
         <Form onSubmit={addOrUpdateProduct} onCancel={resetData}>
-          <Input
-            label="Name"
-            value={productForm.name}
-            onChange={value => {
-              setProductForm(prev => ({ ...prev, name: value }));
-            }}
-            validate
-          />
-          <Input
-            label="Calories"
-            value={`${productForm.calories}`}
-            onChange={value => {
-              setProductForm(prev => ({ ...prev, calories: +value }));
-            }}
-            type="number"
-            validate
-          />
-          <Input
-            label="Protein"
-            value={`${productForm.protein}`}
-            onChange={value => {
-              setProductForm(prev => ({ ...prev, protein: +value }));
-            }}
-            type="number"
-            validate
-          />
-          <Input
-            label="Carbs"
-            value={`${productForm.carbs}`}
-            onChange={value => {
-              setProductForm(prev => ({ ...prev, carbs: +value }));
-            }}
-            type="number"
-            validate
-          />
-          <Input
-            label="Fats"
-            value={`${productForm.fats}`}
-            onChange={value => {
-              setProductForm(prev => ({ ...prev, fats: +value }));
-            }}
-            type="number"
-            validate
-          />
-          <Text style={{ color: 'white', fontSize: 15 }}>
-            The macros will be per 100g
-          </Text>
-        </Form>
-        {isScannig && (
-          <View
-            style={{
-              backgroundColor: '#3a3a3a',
-              padding: 10,
-              borderRadius: 10,
-              marginTop: 20,
-            }}
-          >
-            <Text style={{ color: 'yellow' }}>IMPORTANT</Text>
-            <Text style={{ color: 'white' }}>
-              The data retrieved by scanning a product is not allways 100%
-              correct.
+          <View style={productStyles.formContainer}>
+            <Input
+              label="Product Name"
+              value={productForm.name}
+              onChange={value =>
+                setProductForm(prev => ({ ...prev, name: value }))
+              }
+              validate
+              placeholder="Enter product name"
+              backgroundColor="black"
+            />
+
+            <View style={productStyles.macrosGrid}>
+              <Input
+                label="Calories"
+                value={`${productForm.calories}`}
+                onChange={value =>
+                  setProductForm(prev => ({ ...prev, calories: +value }))
+                }
+                type="number"
+                validate
+                style={productStyles.macroInput}
+                placeholder="kcal"
+                backgroundColor="black"
+              />
+              <Input
+                label="Protein"
+                value={`${productForm.protein}`}
+                onChange={value =>
+                  setProductForm(prev => ({ ...prev, protein: +value }))
+                }
+                type="number"
+                validate
+                style={productStyles.macroInput}
+                placeholder="g"
+                backgroundColor="black"
+              />
+              <Input
+                label="Carbs"
+                value={`${productForm.carbs}`}
+                onChange={value =>
+                  setProductForm(prev => ({ ...prev, carbs: +value }))
+                }
+                type="number"
+                validate
+                style={productStyles.macroInput}
+                placeholder="g"
+                backgroundColor="black"
+              />
+              <Input
+                label="Fats"
+                value={`${productForm.fats}`}
+                onChange={value =>
+                  setProductForm(prev => ({ ...prev, fats: +value }))
+                }
+                type="number"
+                validate
+                style={productStyles.macroInput}
+                placeholder="g"
+                backgroundColor="black"
+              />
+            </View>
+
+            <Text style={productStyles.macroNote}>
+              All values are per 100g/100ml of product
             </Text>
-            <View style={{ display: 'flex', flexDirection: 'row', gap: 3 }}>
-              <Text style={{ color: 'white' }}>Data is imported from</Text>
+          </View>
+        </Form>
+
+        {isScannig && (
+          <View style={productStyles.scanWarning}>
+            <Text style={productStyles.warningTitle}>
+              ⚠️ Data Accuracy Notice
+            </Text>
+            <Text style={productStyles.warningText}>
+              Product data retrieved by scanning may not always be 100%
+              accurate. Please verify the information before saving.
+            </Text>
+            <View style={productStyles.dataSource}>
+              <Text style={productStyles.dataSourceText}>
+                Data imported from{' '}
+              </Text>
               <Text
-                style={{ color: '#2e7fe7ff' }}
-                onPress={() => Linking.openURL('https://fdc.nal.usda.gov')}
+                style={productStyles.dataSourceLink}
+                onPress={() =>
+                  Linking.openURL('https://world.openfoodfacts.org')
+                }
               >
-                Open Food facts
+                Open Food Facts
               </Text>
             </View>
           </View>
         )}
       </CustomModal>
 
-      {/* Camera overlay */}
+      {/* Camera Overlay */}
       {device && openCamera && (
         <View style={StyleSheet.absoluteFill}>
           <GestureDetector gesture={tapGesture}>
@@ -456,38 +513,309 @@ export default function Products() {
             />
           </GestureDetector>
 
-          {/* Close button */}
+          {/* Scanner Frame */}
+          <View style={productStyles.scannerFrame}>
+            <View style={productStyles.scannerCornerTL} />
+            <View style={productStyles.scannerCornerTR} />
+            <View style={productStyles.scannerCornerBL} />
+            <View style={productStyles.scannerCornerBR} />
+          </View>
+
+          {/* Instructions */}
+          <View style={productStyles.scannerInstructions}>
+            <Text style={productStyles.scannerInstructionText}>
+              Align barcode within the frame
+            </Text>
+            <Text style={productStyles.scannerInstructionSubtext}>
+              Tap to focus • Auto-scan in progress
+            </Text>
+          </View>
+
+          {/* Close Button */}
           <Pressable
             onPress={() => setOpenCamera(false)}
-            style={{ position: 'absolute', top: 20, right: 20 }}
+            style={productStyles.closeCameraButton}
           >
-            <FontAwesomeIcon
-              icon={faX}
-              color="white"
-              style={{
-                backgroundColor: 'rgba(53,53,53,0.9)',
-                padding: 14,
-                borderRadius: 14,
-              }}
-            />
+            <FontAwesomeIcon icon={faX} size={24} color="white" />
           </Pressable>
-
-          {/* Focus hint */}
-          <View
-            style={{
-              position: 'absolute',
-              bottom: 30,
-              alignSelf: 'center',
-              backgroundColor: 'rgba(53,53,53,0.9)',
-              paddingHorizontal: 14,
-              paddingVertical: 6,
-              borderRadius: 12,
-            }}
-          >
-            <Text style={{ color: 'white' }}>Press on the screen to focus</Text>
-          </View>
         </View>
       )}
     </View>
   );
 }
+
+// Add these productStyles to your productStyles.ts file:
+const productsStyles = StyleSheet.create({
+  sectionHeader: {
+    marginBottom: 16,
+  },
+
+  sectionTitle: {
+    color: 'white',
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+
+  sectionSubtitle: {
+    color: '#aaa',
+    fontSize: 14,
+  },
+
+  searchContainer: {
+    marginBottom: 16,
+  },
+
+  searchInputContainer: {
+    position: 'relative',
+  },
+
+  searchIcon: {
+    position: 'absolute',
+    left: 16,
+    top: 14,
+    zIndex: 1,
+  },
+
+  searchInput: {
+    paddingLeft: 48,
+    height: 48,
+    borderRadius: 12,
+    fontSize: 16,
+  },
+
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+
+  addButton: {
+    backgroundColor: '#2196F3',
+  },
+
+  importButton: {
+    backgroundColor: '#9C27B0',
+  },
+
+  scanButton: {
+    backgroundColor: '#FF9800',
+  },
+
+  buttonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  productsListContainer: {
+    flex: 1,
+    backgroundColor: '#1c1c1c',
+    borderRadius: 12,
+  },
+
+  productsGrid: {
+    padding: 16,
+    gap: 12,
+  },
+
+  emptyState: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  emptyStateTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+
+  emptyStateText: {
+    color: '#aaa',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+
+  formContainer: {
+    gap: 16,
+  },
+
+  macrosGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+
+  macroInput: {
+    flex: 1,
+    minWidth: '45%',
+  },
+
+  macroNote: {
+    color: '#aaa',
+    fontSize: 13,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 8,
+  },
+
+  scanWarning: {
+    backgroundColor: '#333',
+    padding: 16,
+    borderRadius: 10,
+    marginTop: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF9800',
+  },
+
+  warningTitle: {
+    color: '#FF9800',
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+
+  warningText: {
+    color: '#ccc',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+
+  dataSource: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+  },
+
+  dataSourceText: {
+    color: '#aaa',
+    fontSize: 13,
+  },
+
+  dataSourceLink: {
+    color: '#4FC3F7',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  scannerFrame: {
+    position: 'absolute',
+    top: '30%',
+    left: '10%',
+    right: '10%',
+    height: 200,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  scannerCornerTL: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: '#2196F3',
+    borderTopLeftRadius: 12,
+  },
+
+  scannerCornerTR: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderColor: '#2196F3',
+    borderTopRightRadius: 12,
+  },
+
+  scannerCornerBL: {
+    position: 'absolute',
+    bottom: -2,
+    left: -2,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: '#2196F3',
+    borderBottomLeftRadius: 12,
+  },
+
+  scannerCornerBR: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderColor: '#2196F3',
+    borderBottomRightRadius: 12,
+  },
+
+  scannerInstructions: {
+    position: 'absolute',
+    bottom: 40,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginHorizontal: 20,
+    borderRadius: 12,
+  },
+
+  scannerInstructionText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+
+  scannerInstructionSubtext: {
+    color: '#aaa',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+
+  closeCameraButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+
+// Update your existing productStyles object
+export const productStyles = {
+  ...styles,
+  ...productsStyles,
+};

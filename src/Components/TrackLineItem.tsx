@@ -52,18 +52,6 @@ export default function TrackLineItem({ line, index }: TrackLineItemProps) {
           gap: 10,
         }}
       >
-        <Text
-          style={{
-            ...styles.textxl,
-            borderRadius: 15,
-            backgroundColor: '#1c1c1c',
-            borderWidth: 1,
-            padding: 5,
-            fontSize: 15,
-          }}
-        >
-          {`#${index + 1}`}
-        </Text>
         <View>
           <Text style={{ ...styles.textl, fontSize: 20 }}>
             {line.name
@@ -72,10 +60,15 @@ export default function TrackLineItem({ line, index }: TrackLineItemProps) {
                 : line.name
               : ''}
           </Text>
-          <Text style={{ fontSize: 12, color: 'white' }}>
-            Quantity: {line.quantity}
-            {line.unit}
-          </Text>
+          <View style={{ display: 'flex', flexDirection: 'row', gap: 10 }}>
+            <Text style={{ fontSize: 12, color: 'white' }}>
+              Quantity: {line.quantity}
+              {line.unit}
+            </Text>
+            <Text style={{ fontSize: 12, color: 'white' }}>
+              Kcal: {line.calories}
+            </Text>
+          </View>
         </View>
       </View>
       <Pressable onPress={handleDeleteLine}>

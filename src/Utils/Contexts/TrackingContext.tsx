@@ -13,6 +13,7 @@ import { MacroModel } from '../Models';
 import { useNotification } from './NotificationContext';
 import { database } from '../../DB/Database';
 import TrackLine from '../../DB/Models/TrackLine';
+import Meal, { MealProduct } from '../../DB/Models/Meal';
 
 type TrackingContextType = {
   macros: MacroModel;
@@ -23,6 +24,7 @@ type TrackingContextType = {
   thisMonthLines: TrackLine[];
   selectedDateLines: TrackLine[];
   selectedDate: Date | null;
+  meals: Meal[];
   setUpdateLines: Dispatch<SetStateAction<boolean>>;
   setSelectedDate: Dispatch<SetStateAction<Date | null>>;
   addProductToTracking: (_product: ProductType, _amount: number) => void;
@@ -32,6 +34,15 @@ type TrackingContextType = {
   getTrackLinesForDate: (_date: Date) => Promise<void>;
   refreshTrackLines: () => Promise<void>;
   resetToToday: () => void;
+  // Meal functions
+  addMealToTracking: (_meal: Meal, _date: Date) => Promise<void>;
+  getMeals: () => Promise<void>;
+  removeMeal: (_meal: Meal) => Promise<void>;
+  refreshMeals: () => Promise<void>;
+  editMeal: (
+    _meal: Meal,
+    _data: { name: string; products: MealProduct[] },
+  ) => Promise<void>;
 };
 
 export const TrackingContext = createContext<TrackingContextType | undefined>(
@@ -49,6 +60,14 @@ const normalizeDate = (date: Date): string => {
   return normalized.toISOString().split('T')[0]; // Get just YYYY-MM-DD
 };
 
+// Helper function for local date string
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   const { addNotification } = useNotification();
   const [macros, setMacros] = useState(new MacroModel());
@@ -60,11 +79,13 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   const [selectedDateLines, setSelectedDateLines] = useState<TrackLine[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [updateLines, setUpdateLines] = useState(true);
+  const [meals, setMeals] = useState<Meal[]>([]);
 
   // Use refs to track previous values and prevent infinite loops
   const isInitialMount = useRef(true);
   const prevSelectedDate = useRef<Date | null>(null);
 
+  // =================== PRODUCT FUNCTIONS ===================
   const addProductToTracking = useCallback(
     (_product: ProductType, _amount: number) => {
       const factor = _amount / 100;
@@ -103,6 +124,26 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
     }
   }, [addNotification]);
 
+  const removeProduct = useCallback(
+    async (_product: Product): Promise<number> => {
+      try {
+        return await database.write(async () => {
+          const productCollection = database.get<Product>('products');
+          const productRecord = await productCollection.find(_product.id);
+          await productRecord.markAsDeleted();
+
+          setProducts(prev => prev.filter(prod => prod.id !== _product.id));
+          return 1; // success
+        });
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        return 0; // failure
+      }
+    },
+    [],
+  );
+
+  // =================== TRACK LINE FUNCTIONS ===================
   const refreshTrackLines = useCallback(
     async (forceToday: boolean = false) => {
       try {
@@ -196,16 +237,13 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
       }
     },
     [addNotification, selectedDate],
-  ); // Only depends on selectedDate
+  );
 
   const getTrackLinesForDate = useCallback(
     async (date: Date) => {
       try {
         const targetDate = new Date(date);
         setSelectedDate(targetDate);
-
-        // We'll let refreshTrackLines handle the actual data fetching
-        // to avoid duplicate logic and state updates
         await refreshTrackLines();
       } catch (error) {
         addNotification({ type: 'ERROR', message: `${error}` });
@@ -219,32 +257,11 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
     refreshTrackLines(true); // Force today view
   }, [refreshTrackLines]);
 
-  const removeProduct = useCallback(
-    async (_product: Product): Promise<number> => {
-      try {
-        return await database.write(async () => {
-          const productCollection = database.get<Product>('products');
-          const productRecord = await productCollection.find(_product.id);
-          await productRecord.markAsDeleted();
-
-          setProducts(prev => prev.filter(prod => prod.id !== _product.id));
-          return 1; // success
-        });
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        return 0; // failure
-      }
-    },
-    [],
-  );
-
   const removeTrackLine = useCallback(
     async (_trackLine: TrackLine) => {
       try {
         await database.write(async () => {
           await _trackLine.markAsDeleted();
-
-          // Refresh all data after deletion
           await refreshTrackLines();
         });
       } catch (error) {
@@ -254,27 +271,184 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
     [addNotification, refreshTrackLines],
   );
 
-  // Initial load and when updateLines changes
+  // =================== MEAL FUNCTIONS ===================
+  const getMeals = useCallback(async () => {
+    try {
+      const allMeals = await database.get<Meal>('meals').query().fetch();
+      setMeals(allMeals || []);
+    } catch (error) {
+      addNotification({ type: 'ERROR', message: `${error}` });
+    }
+  }, [addNotification]);
+
+  // Alias for getMeals for consistency
+  const refreshMeals = useCallback(async () => {
+    await getMeals();
+  }, [getMeals]);
+
+  const addMealToTracking = useCallback(
+    async (meal: Meal, selectedDate: Date) => {
+      try {
+        if (!meal.products || meal.products.length === 0) {
+          addNotification({
+            type: 'ERROR',
+            message: 'Meal has no products',
+          });
+          return;
+        }
+
+        let totalCalories = 0;
+        let totalProtein = 0;
+        let totalCarbs = 0;
+        let totalFats = 0;
+        let productNames = [];
+
+        await database.write(async () => {
+          // First, get all products in the meal
+          const productIds = meal.products.map(p => p.id);
+
+          // Fetch all products at once for better performance
+          const allProducts = await database
+            .get<Product>('products')
+            .query()
+            .fetch();
+
+          // Create a map for quick lookup
+          const productMap = new Map();
+          allProducts.forEach(product => {
+            productMap.set(product.id, product);
+          });
+
+          for (const mealProduct of meal.products) {
+            const actualProduct = productMap.get(mealProduct.id);
+
+            if (actualProduct) {
+              productNames.push(actualProduct.name);
+
+              // Calculate macros for this product
+              const factor = mealProduct.quantity / 100;
+              totalCalories += actualProduct.calories * factor;
+              totalProtein += actualProduct.protein * factor;
+              totalCarbs += actualProduct.carbs * factor;
+              totalFats += actualProduct.fats * factor;
+
+              // Create track line
+              await database.get<TrackLine>('track_lines').create(trackLine => {
+                trackLine.date = getLocalDateString(selectedDate);
+                trackLine.quantity = mealProduct.quantity;
+                trackLine.unit = mealProduct.unit || 'g';
+                trackLine.name = actualProduct.name;
+                trackLine.calories = actualProduct.calories;
+                trackLine.protein = actualProduct.protein;
+                trackLine.carbs = actualProduct.carbs;
+                trackLine.fats = actualProduct.fats;
+              });
+            } else {
+              console.warn(`Product with ID ${mealProduct.id} not found`);
+              addNotification({
+                type: 'ERROR',
+                message: `One or more products could not be found`,
+              });
+            }
+          }
+        });
+
+        addNotification({
+          type: 'SUCCESS',
+          message: `Meal "${meal.name}" added (${totalCalories.toFixed(
+            0,
+          )} cal, ${productNames.length} items)`,
+        });
+
+        await refreshTrackLines();
+      } catch (error) {
+        addNotification({ type: 'ERROR', message: `${error}` });
+      }
+    },
+    [addNotification, refreshTrackLines],
+  );
+
+  const removeMeal = useCallback(
+    async (meal: Meal) => {
+      try {
+        await database.write(async () => {
+          await meal.markAsDeleted();
+        });
+
+        await getMeals();
+
+        addNotification({
+          type: 'SUCCESS',
+          message: `Meal "${meal.name}" deleted`,
+        });
+      } catch (error) {
+        addNotification({ type: 'ERROR', message: `${error}` });
+      }
+    },
+    [addNotification, getMeals],
+  );
+
+  const editMeal = useCallback(
+    async (meal: Meal, data: { name: string; products: MealProduct[] }) => {
+      try {
+        if (!data.name.trim()) {
+          addNotification({
+            type: 'ERROR',
+            message: 'Please enter a meal name',
+          });
+          return;
+        }
+
+        if (data.products.length === 0) {
+          addNotification({
+            type: 'ERROR',
+            message: 'Please add at least one product',
+          });
+          return;
+        }
+
+        await database.write(async () => {
+          const mealRecord = await database.get<Meal>('meals').find(meal.id);
+          await mealRecord.update(m => {
+            m.name = data.name;
+            m.products = data.products;
+          });
+        });
+
+        await getMeals();
+
+        addNotification({
+          type: 'SUCCESS',
+          message: `Meal "${data.name}" updated successfully`,
+        });
+      } catch (error) {
+        addNotification({ type: 'ERROR', message: 'Failed to update meal' });
+      }
+    },
+    [addNotification, getMeals],
+  );
+
+  // =================== INITIAL LOAD & EFFECTS ===================
   useEffect(() => {
     if (!updateLines) return;
 
     const setup = async () => {
       await getProducts();
+      await getMeals();
       await refreshTrackLines();
       setUpdateLines(false);
     };
 
     setup();
-  }, [updateLines, getProducts, refreshTrackLines]);
+  }, [updateLines, getProducts, getMeals, refreshTrackLines]);
 
-  // Handle selectedDate changes - refresh data when selectedDate changes
+  // Handle selectedDate changes
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
     }
 
-    // Only refresh if selectedDate actually changed
     const currentDateStr = selectedDate ? normalizeDate(selectedDate) : null;
     const prevDateStr = prevSelectedDate.current
       ? normalizeDate(prevSelectedDate.current)
@@ -298,6 +472,7 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         thisMonthLines,
         selectedDateLines,
         selectedDate,
+        meals,
         setUpdateLines,
         setSelectedDate,
         addProductToTracking,
@@ -307,6 +482,12 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         getTrackLinesForDate,
         refreshTrackLines,
         resetToToday,
+        // Meal functions
+        addMealToTracking,
+        getMeals,
+        removeMeal,
+        refreshMeals,
+        editMeal,
       }}
     >
       {children}

@@ -72,7 +72,7 @@ export const migrations = schemaMigrations({
         createTable({
           name: 'meals',
           columns: [
-            { name: 'field', type: 'string' },
+            { name: 'name', type: 'string' },
             { name: 'value', type: 'string' },
           ],
         }),

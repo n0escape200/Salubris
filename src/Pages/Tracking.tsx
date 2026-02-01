@@ -1,6 +1,6 @@
 import { View } from 'react-native';
 import { styles } from '../Utils/Styles';
-import MacroTracking from '../Components/MacroTracking';
+import MacroTracking from '../Components/MacroTracking/MacroTracking';
 import TabSelect from '../Components/TabSelect';
 import { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';

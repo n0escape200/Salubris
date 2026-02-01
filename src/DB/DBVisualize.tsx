@@ -3,10 +3,11 @@ import CustomModal from '../Components/CustomModal';
 import Table from '../Components/Table';
 import { database } from './Database';
 import Product from './Models/Product';
+import TrackLine from './Models/TrackLine';
+import Meal from './Models/Meal';
 import { useEffect, useState } from 'react';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
 import { styles } from '../Utils/Styles';
-import TrackLine from './Models/TrackLine';
 
 type DBVisualizeProps = {
   open: boolean;
@@ -17,6 +18,7 @@ export default function DBVisualize(props: DBVisualizeProps) {
   const { open, onClose } = props;
   const [products, setProducts] = useState<Product[]>([]);
   const [trackLines, setTrackLines] = useState<TrackLine[]>([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
   const [tab, setTab] = useState('products');
   const { addNotification } = useNotification();
 
@@ -44,9 +46,19 @@ export default function DBVisualize(props: DBVisualizeProps) {
     }
   }
 
+  async function getMeals() {
+    try {
+      const allMeals = await database.get<Meal>('meals').query().fetch();
+      setMeals(allMeals);
+    } catch (error) {
+      addNotification({ type: 'ERROR', message: `${error}` });
+    }
+  }
+
   useEffect(() => {
     getProducts();
     getTrackLines();
+    getMeals();
   }, []);
 
   return (
@@ -57,7 +69,7 @@ export default function DBVisualize(props: DBVisualizeProps) {
             style={[
               styles.textl,
               {
-                backgroundColor: 'grey',
+                backgroundColor: tab === 'products' ? '#555' : 'grey',
                 padding: 5,
                 borderTopLeftRadius: 5,
                 borderTopRightRadius: 5,
@@ -72,14 +84,29 @@ export default function DBVisualize(props: DBVisualizeProps) {
             style={[
               styles.textl,
               {
-                backgroundColor: 'grey',
+                backgroundColor: tab === 'trackline' ? '#555' : 'grey',
                 padding: 5,
                 borderTopLeftRadius: 5,
                 borderTopRightRadius: 5,
               },
             ]}
           >
-            Trackline
+            Track Lines
+          </Text>
+        </Pressable>
+        <Pressable onPress={() => setTab('meals')}>
+          <Text
+            style={[
+              styles.textl,
+              {
+                backgroundColor: tab === 'meals' ? '#555' : 'grey',
+                padding: 5,
+                borderTopLeftRadius: 5,
+                borderTopRightRadius: 5,
+              },
+            ]}
+          >
+            Meals
           </Text>
         </Pressable>
       </View>
@@ -94,7 +121,7 @@ export default function DBVisualize(props: DBVisualizeProps) {
       {tab === 'trackline' && (
         <Table
           header={[
-            `name`,
+            'name',
             'date',
             'quantity',
             'unit',
@@ -104,6 +131,19 @@ export default function DBVisualize(props: DBVisualizeProps) {
             'fats',
           ]}
           options={trackLines}
+        />
+      )}
+
+      {tab === 'meals' && (
+        <Table
+          header={['name', 'products']}
+          options={meals.map(meal => ({
+            ...meal,
+            // Format products array for display
+            products: meal.products
+              ? JSON.stringify(meal.products.map(p => `${p.id}:${p.quantity}g`))
+              : '[]',
+          }))}
         />
       )}
     </CustomModal>
