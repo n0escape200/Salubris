@@ -147,7 +147,6 @@ export default function WaterTrackingPage() {
         message,
       });
     } catch (error) {
-      console.log(error);
       addNotification({ type: 'ERROR', message: `${error}` });
     }
   }

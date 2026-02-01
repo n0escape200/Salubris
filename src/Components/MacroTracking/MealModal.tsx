@@ -77,6 +77,7 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
 
     try {
       await trackContext.addMealToTracking(selectedMeal, date);
+
       addNotification({
         type: 'SUCCESS',
         message: `Added "${selectedMeal.name}" to tracking`,
@@ -112,7 +113,12 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
   return (
     <>
       {/* Main Modal - Meal Selection */}
-      <CustomModal title="Select Meal" open={open} onClose={handleClose}>
+      <CustomModal
+        title="Select Meal"
+        open={open}
+        onClose={handleClose}
+        customStyle={{ padding: 0 }}
+      >
         <View>
           {trackContext?.meals?.length === 0 ? (
             <View style={styles.emptyMealsContainer}>
@@ -138,6 +144,7 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
               <ScrollView
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={styles.mealsScrollContent}
+                style={{ maxHeight: screenHeight * 0.68 }}
               >
                 <View style={styles.mealsGrid}>
                   {trackContext?.meals.map(meal => {
@@ -306,13 +313,6 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
                 </ScrollView>
               </View>
             )}
-
-            <View style={styles.confirmationNote}>
-              <FontAwesomeIcon icon={faInfoCircle} size={16} color="#2196F3" />
-              <Text style={styles.confirmationNoteText}>
-                Each product will be added as an individual track line
-              </Text>
-            </View>
 
             <View style={styles.confirmationActions}>
               <CustomButton

@@ -145,81 +145,83 @@ export default function ProductModal({
       onClose={handleClose}
     >
       <Form onSubmit={handleSubmit} onCancel={handleClose}>
-        <Autocomplete
-          placeholder="Select or search products"
-          options={trackContext?.products || []}
-          optionLabel="name"
-          onChange={(value: ProductType) =>
-            mapState(value, productForm, setProductForm)
-          }
-        />
-
-        <Input
-          label="Name"
-          value={productForm.name}
-          validate
-          onChange={v => setProductForm(p => ({ ...p, name: v }))}
-          backgroundColor="black"
-        />
-
-        <View style={styles.macroGrid}>
-          <Input
-            label="Calories"
-            value={`${productForm.calories}`}
-            validate
-            type="number"
-            style={styles.macroInput}
-            onChange={v => setProductForm(p => ({ ...p, calories: +v }))}
-            backgroundColor="black"
-          />
-          <Input
-            label="Protein"
-            value={`${productForm.protein}`}
-            validate
-            type="number"
-            style={styles.macroInput}
-            onChange={v => setProductForm(p => ({ ...p, protein: +v }))}
-            backgroundColor="black"
-          />
-          <Input
-            label="Carbs"
-            value={`${productForm.carbs}`}
-            validate
-            type="number"
-            style={styles.macroInput}
-            onChange={v => setProductForm(p => ({ ...p, carbs: +v }))}
-            backgroundColor="black"
-          />
-          <Input
-            label="Fats"
-            value={`${productForm.fats}`}
-            validate
-            type="number"
-            style={styles.macroInput}
-            onChange={v => setProductForm(p => ({ ...p, fats: +v }))}
-            backgroundColor="black"
+        <View
+          style={{ backgroundColor: '#1c1c1c', padding: 15, borderRadius: 10 }}
+        >
+          <Autocomplete
+            placeholder="Search products"
+            options={trackContext?.products || []}
+            optionLabel="name"
+            onChange={(value: ProductType) =>
+              mapState(value, productForm, setProductForm)
+            }
           />
         </View>
 
-        <View style={styles.quantityContainer}>
-          <View style={styles.quantityInput}>
+        <View
+          style={{ backgroundColor: '#1c1c1c', padding: 15, borderRadius: 10 }}
+        >
+          <Input
+            label="Name"
+            value={productForm.name}
+            validate
+            onChange={v => setProductForm(p => ({ ...p, name: v }))}
+          />
+
+          <View style={styles.macroGrid}>
             <Input
-              label="Quantity"
-              value={quantity.value}
+              label="Calories"
+              value={`${productForm.calories}`}
               validate
               type="number"
-              onChange={v => setQuantity(q => ({ ...q, value: v }))}
-              backgroundColor="black"
+              style={styles.macroInput}
+              onChange={v => setProductForm(p => ({ ...p, calories: +v }))}
+            />
+            <Input
+              label="Protein"
+              value={`${productForm.protein}`}
+              validate
+              type="number"
+              style={styles.macroInput}
+              onChange={v => setProductForm(p => ({ ...p, protein: +v }))}
+            />
+            <Input
+              label="Carbs"
+              value={`${productForm.carbs}`}
+              validate
+              type="number"
+              style={styles.macroInput}
+              onChange={v => setProductForm(p => ({ ...p, carbs: +v }))}
+            />
+            <Input
+              label="Fats"
+              value={`${productForm.fats}`}
+              validate
+              type="number"
+              style={styles.macroInput}
+              onChange={v => setProductForm(p => ({ ...p, fats: +v }))}
             />
           </View>
-          <View style={styles.unitSelector}>
-            <Autocomplete
-              placeholder="Unit"
-              initValue={quantity.unit}
-              options={['g', 'kg', 'ml', 'L']}
-              onChange={v => setQuantity(q => ({ ...q, unit: v }))}
-              textInputStyle={styles.unitInput}
-            />
+
+          <View style={styles.quantityContainer}>
+            <View style={styles.quantityInput}>
+              <Input
+                label="Quantity"
+                value={quantity.value}
+                validate
+                type="number"
+                onChange={v => setQuantity(q => ({ ...q, value: v }))}
+              />
+            </View>
+            <View style={styles.unitSelector}>
+              <Autocomplete
+                placeholder="Unit"
+                initValue={quantity.unit}
+                options={['g', 'kg', 'ml', 'L']}
+                onChange={v => setQuantity(q => ({ ...q, unit: v }))}
+                textInputStyle={styles.unitInput}
+              />
+            </View>
           </View>
         </View>
       </Form>

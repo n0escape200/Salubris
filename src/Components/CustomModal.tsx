@@ -1,13 +1,12 @@
-import React, { ReactNode, useEffect, useRef } from 'react';
+import React, { ReactNode } from 'react';
 import {
   Pressable,
   View,
   StyleSheet,
-  Animated,
-  Dimensions,
-  ViewStyle,
   ScrollView,
   Text,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
@@ -17,30 +16,17 @@ type CustomModalProps = {
   open: boolean;
   onClose?: () => void;
   children?: ReactNode;
+  customStyle?: StyleProp<ViewStyle>;
 };
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
 export default function CustomModal(props: CustomModalProps) {
-  const { title, open, onClose, children } = props;
-
-  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
-
-  useEffect(() => {
-    Animated.timing(slideAnim, {
-      toValue: open ? 0 : SCREEN_HEIGHT,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [open, slideAnim]);
+  const { title, open, onClose, children, customStyle } = props;
 
   if (!open) return null;
 
   return (
-    <View style={[styles.overlay]}>
-      <Animated.View
-        style={[styles.modal, { transform: [{ translateY: slideAnim }] }]}
-      >
+    <View style={[styles.overlay, customStyle]}>
+      <View style={styles.modal}>
         <View style={styles.header}>
           <Text style={styles.title}>{title ?? ''}</Text>
 
@@ -49,13 +35,8 @@ export default function CustomModal(props: CustomModalProps) {
           </Pressable>
         </View>
 
-        <ScrollView
-          keyboardShouldPersistTaps="always"
-          contentContainerStyle={styles.content}
-        >
-          {children}
-        </ScrollView>
-      </Animated.View>
+        <View style={styles.contentContainer}>{children}</View>
+      </View>
     </View>
   );
 }
@@ -67,19 +48,23 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.8)',
     zIndex: 1,
+    padding: 10,
   },
   modal: {
     flex: 1,
-    padding: 20,
-    backgroundColor: 'black',
+    backgroundColor: 'rgba(0, 0, 0, 1)',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    padding: 20,
+    paddingBottom: 10,
+  },
+  contentContainer: {
+    flex: 1,
+    padding: 10,
   },
   title: {
     color: 'white',
@@ -89,8 +74,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#3a3a3aff',
     padding: 5,
     borderRadius: 5,
-  },
-  content: {
-    paddingBottom: 40,
   },
 });

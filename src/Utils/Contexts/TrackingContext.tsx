@@ -14,6 +14,7 @@ import { useNotification } from './NotificationContext';
 import { database } from '../../DB/Database';
 import TrackLine from '../../DB/Models/TrackLine';
 import Meal, { MealProduct } from '../../DB/Models/Meal';
+import { Q } from '@nozbe/watermelondb';
 
 type TrackingContextType = {
   macros: MacroModel;
@@ -184,35 +185,14 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         endOfWeek.setDate(startOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
 
-        console.log('Week calculation:', {
-          startOfWeek: startOfWeek.toISOString(),
-          endOfWeek: endOfWeek.toISOString(),
-          today: now.toISOString(),
-        });
-
         const linesForThisWeek = normalizedAll.filter(line => {
           try {
             const lineDate = new Date(line.date);
-            // Debug log for each line
-            console.log('Line date check:', {
-              lineDate: lineDate.toISOString(),
-              lineId: line.id,
-              isInRange: lineDate >= startOfWeek && lineDate <= endOfWeek,
-              startOfWeek: startOfWeek.toISOString(),
-              endOfWeek: endOfWeek.toISOString(),
-            });
             return lineDate >= startOfWeek && lineDate <= endOfWeek;
           } catch (error) {
             console.error('Error parsing line date:', line.date, error);
             return false;
           }
-        });
-
-        console.log('Filtered results:', {
-          totalLines: normalizedAll.length,
-          todayLines: linesForToday.length,
-          weekLines: linesForThisWeek.length,
-          monthLines: linesForThisMonth.length,
         });
 
         // Update time-based filtered lines
@@ -339,52 +319,43 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         let productNames = [];
 
         await database.write(async () => {
-          // First, get all products in the meal
-          const productIds = meal.products.map(p => p.id);
-
-          // Fetch all products at once for better performance
-          const allProducts = await database
-            .get<Product>('products')
-            .query()
-            .fetch();
-
-          // Create a map for quick lookup
-          const productMap = new Map();
-          allProducts.forEach(product => {
-            productMap.set(product.id, product);
-          });
-
           for (const mealProduct of meal.products) {
-            const actualProduct = productMap.get(mealProduct.id);
+            const product = await database
+              .get<Product>('products')
+              .query(Q.where('id', mealProduct.id), Q.take(1))
+              .fetch();
 
-            if (actualProduct) {
-              productNames.push(actualProduct.name);
-
-              // Calculate macros for this product
-              const factor = mealProduct.quantity / 100;
-              totalCalories += actualProduct.calories * factor;
-              totalProtein += actualProduct.protein * factor;
-              totalCarbs += actualProduct.carbs * factor;
-              totalFats += actualProduct.fats * factor;
-
-              // Create track line
-              await database.get<TrackLine>('track_lines').create(trackLine => {
-                trackLine.date = getLocalDateString(selectedDate);
-                trackLine.quantity = mealProduct.quantity;
-                trackLine.unit = mealProduct.unit || 'g';
-                trackLine.name = actualProduct.name;
-                trackLine.calories = actualProduct.calories;
-                trackLine.protein = actualProduct.protein;
-                trackLine.carbs = actualProduct.carbs;
-                trackLine.fats = actualProduct.fats;
-              });
-            } else {
-              console.warn(`Product with ID ${mealProduct.id} not found`);
-              addNotification({
-                type: 'ERROR',
-                message: `One or more products could not be found`,
-              });
+            if (product[0].id) {
             }
+
+            // if (actualProduct) {
+            //   productNames.push(actualProduct.name);
+
+            //   // Calculate macros for this product
+            //   const factor = mealProduct.quantity / 100;
+            //   totalCalories += actualProduct.calories * factor;
+            //   totalProtein += actualProduct.protein * factor;
+            //   totalCarbs += actualProduct.carbs * factor;
+            //   totalFats += actualProduct.fats * factor;
+
+            //   // Create track line
+            //   await database.get<TrackLine>('track_lines').create(trackLine => {
+            //     trackLine.date = getLocalDateString(selectedDate);
+            //     trackLine.quantity = mealProduct.quantity;
+            //     trackLine.unit = mealProduct.unit || 'g';
+            //     trackLine.name = actualProduct.name;
+            //     trackLine.calories = actualProduct.calories;
+            //     trackLine.protein = actualProduct.protein;
+            //     trackLine.carbs = actualProduct.carbs;
+            //     trackLine.fats = actualProduct.fats;
+            //   });
+            // } else {
+            //   console.warn(`Product with ID ${mealProduct.id} not found`);
+            //   addNotification({
+            //     type: 'ERROR',
+            //     message: `One or more products could not be found`,
+            //   });
+            // }
           }
         });
 

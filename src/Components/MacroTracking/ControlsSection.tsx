@@ -35,7 +35,7 @@ export default function ControlsSection({
           onPress={onOpenMealModal}
           style={[styles.actionButton, styles.mealButton]}
         >
-          <FontAwesomeIcon icon={faUtensils} size={22} color="#fff" />
+          <FontAwesomeIcon icon={faUtensils} size={17} color="#fff" />
           <Text style={styles.buttonText}>Meal</Text>
         </Pressable>
 
@@ -44,7 +44,7 @@ export default function ControlsSection({
           onPress={onOpenProductModal}
           style={[styles.actionButton, styles.productButton]}
         >
-          <FontAwesomeIcon icon={faPlus} size={22} color="#fff" />
+          <FontAwesomeIcon icon={faPlus} size={17} color="#fff" />
           <Text style={styles.buttonText}>Item</Text>
         </Pressable>
 
@@ -53,7 +53,7 @@ export default function ControlsSection({
           onPress={onOpenDatePicker}
           style={[styles.actionButton, styles.dateButton]}
         >
-          <FontAwesomeIcon icon={faCalendar} size={22} color="#fff" />
+          <FontAwesomeIcon icon={faCalendar} size={17} color="#fff" />
           <Text style={styles.buttonText}>{formatDate(date)}</Text>
         </Pressable>
       </View>

@@ -92,10 +92,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  macroColumn: {
-    gap: 8,
-  },
-
   macroLabel: {
     color: '#aaa',
     fontSize: 16,
@@ -117,8 +113,8 @@ export const styles = StyleSheet.create({
 
   buttonGroup: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+    justifyContent: 'space-around',
+    gap: 5,
     marginBottom: 16,
   },
 
@@ -127,8 +123,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 5,
     borderRadius: 10,
     gap: 8,
   },
@@ -157,8 +152,8 @@ export const styles = StyleSheet.create({
 
   resetButton: {
     backgroundColor: '#666',
-    paddingVertical: 10,
-    paddingHorizontal: 24,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 8,
   },
 
@@ -963,8 +958,8 @@ export const styles = StyleSheet.create({
   },
 
   mealsGrid: {
-    padding: 16,
     gap: 12,
+    padding: 10,
   },
 
   mealFormContainer: {
@@ -1112,7 +1107,9 @@ export const styles = StyleSheet.create({
   },
 
   mealsScrollContent: {
-    paddingBottom: 20,
+    backgroundColor: '#1c1c1c',
+    padding: 5,
+    borderRadius: 10,
   },
 
   mealSelectionCard: {

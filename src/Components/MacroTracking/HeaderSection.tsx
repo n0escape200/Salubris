@@ -16,14 +16,14 @@ export default function HeaderSection({ macros }: HeaderSectionProps) {
       <Text style={styles.sectionTitle}>Daily Intake</Text>
 
       <View style={styles.macrosGrid}>
-        <View style={styles.macroColumn}>
+        <View>
           <Text style={styles.macroLabel}>Calories:</Text>
           <Text style={styles.macroLabel}>Protein:</Text>
           <Text style={styles.macroLabel}>Carbs:</Text>
           <Text style={styles.macroLabel}>Fat:</Text>
         </View>
 
-        <View style={styles.macroColumn}>
+        <View>
           <Text style={styles.macroValue}>
             {macros?.calories.toFixed(0) || '0'}
           </Text>

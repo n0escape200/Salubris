@@ -113,8 +113,6 @@ export default function Home() {
       weekDates.push(normalizeDateString(date.toISOString()));
     }
 
-    console.log('Week dates for Home:', weekDates);
-
     // Group lines by day
     lines.forEach((line, index) => {
       if (!line || !line.date || !line.calories || !line.quantity) return;
@@ -153,14 +151,12 @@ export default function Home() {
 
     lines.forEach((line, index) => {
       if (!line || !line.date || !line.calories || !line.quantity) {
-        console.log(`Monthly line ${index} invalid:`, line);
         return;
       }
 
       try {
         const lineDate = new Date(line.date);
         if (isNaN(lineDate.getTime())) {
-          console.log(`Monthly line ${index} has invalid date:`, line.date);
           return;
         }
 
@@ -184,7 +180,6 @@ export default function Home() {
       }
     });
 
-    console.log('Monthly totals:', monthlyTotals);
     return monthlyTotals;
   };
 
@@ -203,23 +198,19 @@ export default function Home() {
 
     // Log some sample data for debugging
     if (trackingContext.todayLines && trackingContext.todayLines.length > 0) {
-      console.log('Sample today line:', trackingContext.todayLines[0]);
     }
     if (
       trackingContext.thisWeekLines &&
       trackingContext.thisWeekLines.length > 0
     ) {
-      console.log('Sample week line:', trackingContext.thisWeekLines[0]);
     }
 
     // Calculate today's calories
     const todayCal = calculateCalories(trackingContext.todayLines);
-    console.log('Today calories:', todayCal);
     setTodayCalories(todayCal);
 
     // Calculate weekly data
     const weeklyData = calculateWeeklyByDay(trackingContext.thisWeekLines);
-    console.log('Weekly data calculated:', weeklyData);
     setWeeklyCalories(weeklyData);
 
     // Calculate weekly average (only for days with data)
@@ -228,12 +219,10 @@ export default function Home() {
       daysWithData.length > 0
         ? daysWithData.reduce((a, b) => a + b, 0) / daysWithData.length
         : 0;
-    console.log('Weekly average:', weeklyAvg);
     setWeeklyAverage(weeklyAvg);
 
     // Calculate monthly data
     const monthlyData = calculateMonthlyByMonth(trackingContext.thisMonthLines);
-    console.log('Monthly data calculated:', monthlyData);
     setMonthlyCalories(monthlyData);
 
     // Calculate monthly average (only for months with data)
@@ -242,7 +231,6 @@ export default function Home() {
       monthsWithData.length > 0
         ? monthsWithData.reduce((a, b) => a + b, 0) / monthsWithData.length
         : 0;
-    console.log('Monthly average:', monthlyAvg);
     setMonthlyAverage(monthlyAvg);
 
     Animated.timing(fadeAnim, {

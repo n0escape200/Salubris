@@ -82,7 +82,7 @@ export default forwardRef(function Input(
   useEffect(() => {
     if (label) {
       const isActive = isFocused || value.length > 0;
-      top.value = withTiming(isActive ? -10 : 8, { duration: 200 });
+      top.value = withTiming(isActive ? -10 : 18, { duration: 200 });
       left.value = withTiming(12, { duration: 200 });
       paddingHorizontal.value = withTiming(isActive ? 6 : 0, { duration: 200 });
       opacity.value = withTiming(1, { duration: 200 });
@@ -170,7 +170,7 @@ export default forwardRef(function Input(
   const showError = error && isTouched;
 
   return (
-    <View style={[{ position: 'relative', marginTop: label ? 5 : 0 }, style]}>
+    <View style={[{ position: 'relative', marginTop: label ? 10 : 0 }, style]}>
       <Animated.View
         style={[
           {

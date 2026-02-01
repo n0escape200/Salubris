@@ -32,7 +32,6 @@ type Macros = {
 
 export function getLatestMacros(product: any): Macros | null {
   const nutriscore = product?.nutriscore;
-  console.log('nutriscore', nutriscore);
   if (!nutriscore || typeof nutriscore !== 'object') return null;
 
   // Get the last entry by key order

@@ -39,7 +39,7 @@ export default function MacroTracking() {
       <ControlsSection
         onOpenProductModal={() => setOpenProductModal(true)}
         onOpenMealModal={() => setOpenMealModal(true)}
-        onOpenDatePicker={() => setOpenDatePicker(true)}
+        onOpenDatePicker={() => setOpenDatePicker(!openDatePicker)}
         date={date}
         onReset={handleReset}
       />

@@ -37,7 +37,7 @@ export default function ImportProduct({
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isNoData, setIsNotData] = useState(false);
-  const maxScrollHeight = height * 0.5;
+  const maxScrollHeight = height * 0.45;
 
   function getMacro(product: any, macro: string): number {
     const value = (product.foodNutrients as Array<any>).filter(value =>
@@ -185,7 +185,11 @@ export default function ImportProduct({
             </View>
 
             <ScrollView
-              style={{ maxHeight: maxScrollHeight }}
+              style={{
+                maxHeight: maxScrollHeight,
+                backgroundColor: '#3a3a3aff',
+                padding: 10,
+              }}
               showsVerticalScrollIndicator={false}
             >
               <View style={styles.productsList}>
