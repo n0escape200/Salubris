@@ -126,7 +126,7 @@ export default function Meals() {
         }
       } else if (trackingContext?.refreshMeals) {
         // This will trigger the database update via the context
-        await trackingContext.refreshMeals();
+        await trackingContext.addMeal(formData as Meal);
       }
 
       // Close modal and reset form

@@ -30,30 +30,116 @@ export default function Home() {
   const [weeklyAverage, setWeeklyAverage] = useState(0);
   const [monthlyAverage, setMonthlyAverage] = useState(0);
   const [selectedTab, setSelectedTab] = useState<'week' | 'month'>('week');
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   const trackingContext = useContext(TrackingContext);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const screenWidth = Dimensions.get('window').width - 90;
 
+  // Helper function to normalize date string (YYYY-MM-DD)
+  const normalizeDateString = (dateStr: string): string => {
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        // Try to parse different formats
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          return dateStr; // Already in YYYY-MM-DD format
+        }
+        return '';
+      }
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Error normalizing date:', dateStr, error);
+      return '';
+    }
+  };
+
   // Calculate total calories from a track line array
   const calculateCalories = (lines: any[]) => {
-    return lines.reduce((total, line) => {
-      const factor =
-        line.unit === 'g' ? line.quantity / 100 : (line.quantity * 1000) / 100;
-      return total + line.calories * factor;
-    }, 0);
+    if (!lines || lines.length === 0) return 0;
+
+    let total = 0;
+    lines.forEach(line => {
+      if (line && line.calories && line.quantity) {
+        let factor = 0;
+        if (line.unit === 'g') {
+          factor = line.quantity / 100;
+        } else if (line.unit === 'ml') {
+          factor = line.quantity / 100;
+        } else {
+          factor = line.quantity;
+        }
+
+        const calories = line.calories * factor;
+        if (!isNaN(calories)) {
+          total += calories;
+        }
+      }
+    });
+
+    return total;
   };
 
   // Calculate daily calories from weekly lines
+  // In Home component, update calculateWeeklyByDay function:
   const calculateWeeklyByDay = (lines: any[]) => {
     const dailyTotals = new Array(7).fill(0);
 
-    lines.forEach(line => {
-      const d = new Date(line.date);
-      const dayIndex = (d.getDay() + 6) % 7; // Monday = 0
-      const factor =
-        line.unit === 'g' ? line.quantity / 100 : (line.quantity * 1000) / 100;
-      dailyTotals[dayIndex] += line.calories * factor;
+    if (!lines || lines.length === 0) return dailyTotals;
+
+    // Get the current week's dates (Monday to Sunday)
+    const today = new Date();
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+
+    const monday = new Date(today);
+    monday.setDate(diff);
+    monday.setHours(0, 0, 0, 0);
+
+    // Create date objects for each day of the week
+    const weekDates: string[] = [];
+    const weekDateObjects: Date[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      date.setHours(0, 0, 0, 0);
+      weekDateObjects.push(date);
+      weekDates.push(normalizeDateString(date.toISOString()));
+    }
+
+    console.log('Week dates for Home:', weekDates);
+
+    // Group lines by day
+    lines.forEach((line, index) => {
+      if (!line || !line.date || !line.calories || !line.quantity) return;
+
+      const normalizedLineDate = normalizeDateString(line.date);
+      if (!normalizedLineDate) return;
+
+      // Find which day of the week this belongs to
+      const dayIndex = weekDates.findIndex(date => date === normalizedLineDate);
+
+      if (dayIndex !== -1) {
+        let factor = 0;
+        if (line.unit === 'g') {
+          factor = line.quantity / 100;
+        } else if (line.unit === 'ml') {
+          factor = line.quantity / 100;
+        } else {
+          factor = line.quantity;
+        }
+
+        const calories = line.calories * factor;
+        if (!isNaN(calories)) {
+          dailyTotals[dayIndex] += calories;
+        }
+      }
     });
 
     return dailyTotals;
@@ -62,37 +148,101 @@ export default function Home() {
   // Calculate monthly totals
   const calculateMonthlyByMonth = (lines: any[]) => {
     const monthlyTotals = new Array(12).fill(0);
-    const currentMonth = new Date().getMonth();
 
-    lines.forEach(line => {
-      const d = new Date(line.date);
-      const monthIndex = d.getMonth();
-      if (monthIndex >= currentMonth - 5 && monthIndex <= currentMonth) {
-        const factor =
-          line.unit === 'g'
-            ? line.quantity / 100
-            : (line.quantity * 1000) / 100;
-        monthlyTotals[monthIndex] += line.calories * factor;
+    if (!lines || lines.length === 0) return monthlyTotals;
+
+    lines.forEach((line, index) => {
+      if (!line || !line.date || !line.calories || !line.quantity) {
+        console.log(`Monthly line ${index} invalid:`, line);
+        return;
+      }
+
+      try {
+        const lineDate = new Date(line.date);
+        if (isNaN(lineDate.getTime())) {
+          console.log(`Monthly line ${index} has invalid date:`, line.date);
+          return;
+        }
+
+        const monthIndex = lineDate.getMonth();
+
+        let factor = 0;
+        if (line.unit === 'g') {
+          factor = line.quantity / 100;
+        } else if (line.unit === 'ml') {
+          factor = line.quantity / 100;
+        } else {
+          factor = line.quantity;
+        }
+
+        const calories = line.calories * factor;
+        if (!isNaN(calories)) {
+          monthlyTotals[monthIndex] += calories;
+        }
+      } catch (error) {
+        console.error(`Error processing monthly line ${index}:`, error);
       }
     });
 
+    console.log('Monthly totals:', monthlyTotals);
     return monthlyTotals;
   };
 
   useEffect(() => {
-    if (!trackingContext) return;
+    if (!trackingContext) {
+      setDebugInfo('Tracking context is null');
+      return;
+    }
 
+    setDebugInfo(`
+      Today lines: ${trackingContext.todayLines?.length || 0}
+      Week lines: ${trackingContext.thisWeekLines?.length || 0}
+      Month lines: ${trackingContext.thisMonthLines?.length || 0}
+      Selected date: ${trackingContext.selectedDate || 'null'}
+    `);
+
+    // Log some sample data for debugging
+    if (trackingContext.todayLines && trackingContext.todayLines.length > 0) {
+      console.log('Sample today line:', trackingContext.todayLines[0]);
+    }
+    if (
+      trackingContext.thisWeekLines &&
+      trackingContext.thisWeekLines.length > 0
+    ) {
+      console.log('Sample week line:', trackingContext.thisWeekLines[0]);
+    }
+
+    // Calculate today's calories
     const todayCal = calculateCalories(trackingContext.todayLines);
+    console.log('Today calories:', todayCal);
     setTodayCalories(todayCal);
 
+    // Calculate weekly data
     const weeklyData = calculateWeeklyByDay(trackingContext.thisWeekLines);
+    console.log('Weekly data calculated:', weeklyData);
     setWeeklyCalories(weeklyData);
-    const weeklyAvg = weeklyData.reduce((a, b) => a + b, 0) / 7;
+
+    // Calculate weekly average (only for days with data)
+    const daysWithData = weeklyData.filter(cal => cal > 0);
+    const weeklyAvg =
+      daysWithData.length > 0
+        ? daysWithData.reduce((a, b) => a + b, 0) / daysWithData.length
+        : 0;
+    console.log('Weekly average:', weeklyAvg);
     setWeeklyAverage(weeklyAvg);
 
+    // Calculate monthly data
     const monthlyData = calculateMonthlyByMonth(trackingContext.thisMonthLines);
+    console.log('Monthly data calculated:', monthlyData);
     setMonthlyCalories(monthlyData);
-    const monthlyAvg = monthlyData.reduce((a, b) => a + b, 0) / 6;
+
+    // Calculate monthly average (only for months with data)
+    const monthsWithData = monthlyData.filter(cal => cal > 0);
+    const monthlyAvg =
+      monthsWithData.length > 0
+        ? monthsWithData.reduce((a, b) => a + b, 0) / monthsWithData.length
+        : 0;
+    console.log('Monthly average:', monthlyAvg);
     setMonthlyAverage(monthlyAvg);
 
     Animated.timing(fadeAnim, {
@@ -101,6 +251,12 @@ export default function Home() {
       useNativeDriver: true,
     }).start();
   }, [trackingContext]);
+
+  // Get day labels for current week (Monday to Sunday)
+  const getDayLabels = () => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days;
+  };
 
   // Get last 6 months labels
   const getLastSixMonths = () => {
@@ -127,20 +283,6 @@ export default function Home() {
     }
 
     return lastSixMonths;
-  };
-
-  // Get day labels for current week
-  const getDayLabels = () => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const today = new Date().getDay();
-    const startDay = (today + 7 - 6) % 7;
-
-    const orderedDays = [];
-    for (let i = 0; i < 7; i++) {
-      orderedDays.push(days[(startDay + i) % 7]);
-    }
-
-    return orderedDays;
   };
 
   // Get filtered monthly data for last 6 months
@@ -194,7 +336,7 @@ export default function Home() {
             <View style={styles.avatarContainer}>
               <FontAwesomeIcon icon={faUser} color="#fff" size={28} />
             </View>
-            <View style={styles.headerText}>
+            <View>
               <Text style={styles.welcomeText}>Welcome back</Text>
               <Text style={styles.userName}>User</Text>
             </View>
@@ -291,18 +433,36 @@ export default function Home() {
                   </View>
                 </View>
 
-                <LineChart
-                  data={{
-                    labels: getDayLabels(),
-                    datasets: [{ data: weeklyCalories }],
-                  }}
-                  width={screenWidth}
-                  height={220}
-                  chartConfig={chartConfig}
-                  style={styles.chartStyle}
-                  bezier
-                  fromZero
-                />
+                {weeklyCalories.some(cal => cal > 0) ? (
+                  <LineChart
+                    data={{
+                      labels: getDayLabels(),
+                      datasets: [{ data: weeklyCalories }],
+                    }}
+                    width={screenWidth}
+                    height={220}
+                    chartConfig={chartConfig}
+                    style={styles.chartStyle}
+                    bezier
+                    fromZero
+                    yAxisSuffix=" cal"
+                  />
+                ) : (
+                  <View
+                    style={{
+                      height: 220,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: '#aaa', fontSize: 14 }}>
+                      No data for this week yet
+                    </Text>
+                    <Text style={{ color: '#888', fontSize: 12, marginTop: 8 }}>
+                      Add some meals to see your weekly progress!
+                    </Text>
+                  </View>
+                )}
               </>
             ) : (
               <>
@@ -317,25 +477,39 @@ export default function Home() {
                   </View>
                 </View>
 
-                <BarChart
-                  data={{
-                    labels: getLastSixMonths(),
-                    datasets: [
-                      {
-                        data: getFilteredMonthlyData(),
-                      },
-                    ],
-                  }}
-                  width={screenWidth}
-                  height={220}
-                  chartConfig={barChartConfig}
-                  style={styles.chartStyle}
-                  yAxisLabel=""
-                  yAxisSuffix=" cal"
-                  fromZero
-                  showBarTops={false}
-                  withInnerLines={false}
-                />
+                {getFilteredMonthlyData().some(cal => cal > 0) ? (
+                  <BarChart
+                    data={{
+                      labels: getLastSixMonths(),
+                      datasets: [
+                        {
+                          data: getFilteredMonthlyData(),
+                        },
+                      ],
+                    }}
+                    width={screenWidth}
+                    height={220}
+                    chartConfig={barChartConfig}
+                    style={styles.chartStyle}
+                    yAxisLabel=""
+                    yAxisSuffix=" cal"
+                    fromZero
+                    showBarTops={false}
+                    withInnerLines={false}
+                  />
+                ) : (
+                  <View
+                    style={{
+                      height: 220,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: '#aaa', fontSize: 14 }}>
+                      No data for last 6 months yet
+                    </Text>
+                  </View>
+                )}
               </>
             )}
           </View>
@@ -344,21 +518,21 @@ export default function Home() {
           <View style={styles.statsSummary}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>
-                {trackingContext?.todayLines.length || 0}
+                {trackingContext?.todayLines?.length || 0}
               </Text>
               <Text style={styles.statLabel}>Today's Items</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>
-                {trackingContext?.thisWeekLines.length || 0}
+                {trackingContext?.thisWeekLines?.length || 0}
               </Text>
               <Text style={styles.statLabel}>This Week</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>
-                {trackingContext?.thisMonthLines.length || 0}
+                {trackingContext?.thisMonthLines?.length || 0}
               </Text>
               <Text style={styles.statLabel}>This Month</Text>
             </View>

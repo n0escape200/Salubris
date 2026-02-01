@@ -2,7 +2,7 @@ import { Pressable, View } from 'react-native';
 import { Text } from 'react-native-gesture-handler';
 import { styles } from '../Utils/Styles';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faTrash, faUtensils, faEdit } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faEdit } from '@fortawesome/free-solid-svg-icons';
 import { useNotification } from '../Utils/Contexts/NotificationContext';
 import { database } from '../DB/Database';
 import Meal from '../DB/Models/Meal';
@@ -52,13 +52,6 @@ export default function MealItem({ meal, setRefresh, onEdit }: MealProps) {
 
   return (
     <View style={styles.mealCard}>
-      {/* Meal Icon & Basic Info */}
-      <View style={styles.mealIconContainer}>
-        <View style={styles.mealIcon}>
-          <FontAwesomeIcon icon={faUtensils} size={20} color="#FF9800" />
-        </View>
-      </View>
-
       {/* Meal Details */}
       <View style={styles.mealInfo}>
         <Text style={styles.mealName} numberOfLines={1}>

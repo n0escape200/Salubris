@@ -43,6 +43,7 @@ type TrackingContextType = {
     _meal: Meal,
     _data: { name: string; products: MealProduct[] },
   ) => Promise<void>;
+  addMeal: (_meal: Meal) => void;
 };
 
 export const TrackingContext = createContext<TrackingContextType | undefined>(
@@ -170,15 +171,48 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
           );
         });
 
-        const firstDayOfWeek = new Date(now);
-        firstDayOfWeek.setHours(0, 0, 0, 0);
-        firstDayOfWeek.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-        const lastDayOfWeek = new Date(firstDayOfWeek);
-        lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
+        // FIXED: Correct week calculation
+        // Get start of week (Monday)
+        const startOfWeek = new Date(now);
+        const day = startOfWeek.getDay();
+        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+        startOfWeek.setDate(diff);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        // Get end of week (Sunday)
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        console.log('Week calculation:', {
+          startOfWeek: startOfWeek.toISOString(),
+          endOfWeek: endOfWeek.toISOString(),
+          today: now.toISOString(),
+        });
 
         const linesForThisWeek = normalizedAll.filter(line => {
-          const d = new Date(line.date);
-          return d >= firstDayOfWeek && d <= lastDayOfWeek;
+          try {
+            const lineDate = new Date(line.date);
+            // Debug log for each line
+            console.log('Line date check:', {
+              lineDate: lineDate.toISOString(),
+              lineId: line.id,
+              isInRange: lineDate >= startOfWeek && lineDate <= endOfWeek,
+              startOfWeek: startOfWeek.toISOString(),
+              endOfWeek: endOfWeek.toISOString(),
+            });
+            return lineDate >= startOfWeek && lineDate <= endOfWeek;
+          } catch (error) {
+            console.error('Error parsing line date:', line.date, error);
+            return false;
+          }
+        });
+
+        console.log('Filtered results:', {
+          totalLines: normalizedAll.length,
+          todayLines: linesForToday.length,
+          weekLines: linesForThisWeek.length,
+          monthLines: linesForThisMonth.length,
         });
 
         // Update time-based filtered lines
@@ -227,6 +261,7 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
           setMacros(todayMacros);
         }
       } catch (error) {
+        console.error('Error in refreshTrackLines:', error);
         addNotification({ type: 'ERROR', message: `${error}` });
         setTrackLines([]);
         setTodayLines([]);
@@ -461,6 +496,24 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
     prevSelectedDate.current = selectedDate;
   }, [selectedDate, refreshTrackLines]);
 
+  async function addMeal(meal: Meal) {
+    try {
+      await database.write(async () => {
+        await database.get<Meal>('meals').create(m => {
+          m.name = meal.name;
+          m.products = meal.products;
+        });
+        addNotification({
+          type: 'SUCCESS',
+          message: `Added meal ${meal.name}`,
+        });
+      });
+      refreshMeals();
+    } catch (error) {
+      addNotification({ type: 'ERROR', message: `${error}` });
+    }
+  }
+
   return (
     <TrackingContext.Provider
       value={{
@@ -482,12 +535,12 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         getTrackLinesForDate,
         refreshTrackLines,
         resetToToday,
-        // Meal functions
         addMealToTracking,
         getMeals,
         removeMeal,
         refreshMeals,
         editMeal,
+        addMeal,
       }}
     >
       {children}
