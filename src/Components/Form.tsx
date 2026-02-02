@@ -64,6 +64,9 @@ export default function Form({ children, onSubmit, onCancel }: FormProps) {
       : child,
   );
 
+  {
+    /*TODO will need to implement Input validation */
+  }
   return (
     <View style={{ gap: 15 }}>
       {enhancedChildren}

@@ -83,29 +83,21 @@ export default function TrackLineItem({ line, index }: TrackLineItemProps) {
             <Text style={styles.macroLabelCompact}>PRO</Text>
           </View>
 
-          {line.carbs && (
-            <>
-              <View style={styles.macroDividerCompact} />
-              <View style={styles.macroItemCompact}>
-                <Text style={styles.macroValueCompact}>
-                  {Math.round(line.carbs * (line.quantity / 100) * 10) / 10}
-                </Text>
-                <Text style={styles.macroLabelCompact}>CARB</Text>
-              </View>
-            </>
-          )}
+          <View style={styles.macroDividerCompact} />
+          <View style={styles.macroItemCompact}>
+            <Text style={styles.macroValueCompact}>
+              {Math.round(line.carbs * (line.quantity / 100) * 10) / 10}
+            </Text>
+            <Text style={styles.macroLabelCompact}>CARB</Text>
+          </View>
 
-          {line.fats && (
-            <>
-              <View style={styles.macroDividerCompact} />
-              <View style={styles.macroItemCompact}>
-                <Text style={styles.macroValueCompact}>
-                  {Math.round(line.fats * (line.quantity / 100) * 10) / 10}
-                </Text>
-                <Text style={styles.macroLabelCompact}>FAT</Text>
-              </View>
-            </>
-          )}
+          <View style={styles.macroDividerCompact} />
+          <View style={styles.macroItemCompact}>
+            <Text style={styles.macroValueCompact}>
+              {Math.round(line.fats * (line.quantity / 100) * 10) / 10}
+            </Text>
+            <Text style={styles.macroLabelCompact}>FAT</Text>
+          </View>
         </View>
       </View>
 

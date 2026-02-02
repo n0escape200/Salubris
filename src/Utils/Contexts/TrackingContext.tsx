@@ -36,7 +36,11 @@ type TrackingContextType = {
   refreshTrackLines: () => Promise<void>;
   resetToToday: () => void;
   // Meal functions
-  addMealToTracking: (_meal: Meal, _date: Date) => Promise<void>;
+  addMealToTracking: (
+    _meal: Meal,
+    _date: Date,
+    _quantity: number,
+  ) => Promise<void>;
   getMeals: () => Promise<void>;
   removeMeal: (_meal: Meal) => Promise<void>;
   refreshMeals: () => Promise<void>;
@@ -302,7 +306,7 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
   }, [getMeals]);
 
   const addMealToTracking = useCallback(
-    async (meal: Meal, selectedDate: Date) => {
+    async (meal: Meal, selectedDate: Date, quantity: number) => {
       try {
         if (!meal.products || meal.products.length === 0) {
           addNotification({
@@ -316,57 +320,43 @@ export const TrackingProvider = ({ children }: TrackingProviderProps) => {
         let totalProtein = 0;
         let totalCarbs = 0;
         let totalFats = 0;
-        let productNames = [];
-
+        let totalQuantity = 0;
         await database.write(async () => {
           for (const mealProduct of meal.products) {
             const product = await database
               .get<Product>('products')
               .query(Q.where('id', mealProduct.id), Q.take(1))
               .fetch();
+            const data = product[0];
 
-            if (product[0].id) {
+            if (data.id) {
+              const factor = mealProduct.quantity / 100;
+              totalQuantity += mealProduct.quantity;
+              totalCalories += data.calories * factor;
+              totalProtein += data.protein * factor;
+              totalCarbs += data.carbs * factor;
+              totalFats += data.fats * factor;
             }
-
-            // if (actualProduct) {
-            //   productNames.push(actualProduct.name);
-
-            //   // Calculate macros for this product
-            //   const factor = mealProduct.quantity / 100;
-            //   totalCalories += actualProduct.calories * factor;
-            //   totalProtein += actualProduct.protein * factor;
-            //   totalCarbs += actualProduct.carbs * factor;
-            //   totalFats += actualProduct.fats * factor;
-
-            //   // Create track line
-            //   await database.get<TrackLine>('track_lines').create(trackLine => {
-            //     trackLine.date = getLocalDateString(selectedDate);
-            //     trackLine.quantity = mealProduct.quantity;
-            //     trackLine.unit = mealProduct.unit || 'g';
-            //     trackLine.name = actualProduct.name;
-            //     trackLine.calories = actualProduct.calories;
-            //     trackLine.protein = actualProduct.protein;
-            //     trackLine.carbs = actualProduct.carbs;
-            //     trackLine.fats = actualProduct.fats;
-            //   });
-            // } else {
-            //   console.warn(`Product with ID ${mealProduct.id} not found`);
-            //   addNotification({
-            //     type: 'ERROR',
-            //     message: `One or more products could not be found`,
-            //   });
-            // }
           }
-        });
 
-        addNotification({
-          type: 'SUCCESS',
-          message: `Meal "${meal.name}" added (${totalCalories.toFixed(
-            0,
-          )} cal, ${productNames.length} items)`,
-        });
+          await database.get<TrackLine>('track_lines').create(trackLine => {
+            trackLine.date = getLocalDateString(selectedDate);
+            trackLine.quantity = quantity;
+            trackLine.unit = 'g';
+            trackLine.name = meal.name;
+            trackLine.calories = (totalCalories / totalQuantity) * quantity;
+            trackLine.protein = (totalProtein / totalQuantity) * quantity;
+            trackLine.carbs = (totalCarbs / totalQuantity) * quantity;
+            trackLine.fats = (totalFats / totalQuantity) * quantity;
+          });
 
-        await refreshTrackLines();
+          addNotification({
+            type: 'SUCCESS',
+            message: `Meal "${meal.name}" added`,
+          });
+
+          await refreshTrackLines();
+        });
       } catch (error) {
         addNotification({ type: 'ERROR', message: `${error}` });
       }

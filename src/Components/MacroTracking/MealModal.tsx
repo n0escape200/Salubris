@@ -2,13 +2,14 @@ import { useState, useContext, useEffect } from 'react';
 import { View, Text, Pressable, Dimensions } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
-import { faUtensils, faInfoCircle } from '@fortawesome/free-solid-svg-icons';
+import { faUtensils } from '@fortawesome/free-solid-svg-icons';
 import { TrackingContext } from '../../Utils/Contexts/TrackingContext';
 import { useNotification } from '../../Utils/Contexts/NotificationContext';
 import CustomModal from '../CustomModal';
 import CustomButton from '../CustomButton';
 import Meal from '../../DB/Models/Meal';
 import { styles } from '../../Utils/Styles';
+import Input from '../Input';
 
 type MealModalProps = {
   open: boolean;
@@ -22,14 +23,14 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
   const [productNamesMap, setProductNamesMap] = useState<Map<string, string>>(
     new Map(),
   );
-
+  const [quantity, setQuantity] = useState(0);
   const trackContext = useContext(TrackingContext);
   const { addNotification } = useNotification();
   const screenHeight = Dimensions.get('window').height;
 
   useEffect(() => {
     if (trackContext?.products) {
-      const map = new Map();
+      const map = new Map<string, string>();
       trackContext.products.forEach(product => {
         map.set(product.id, product.name);
       });
@@ -39,15 +40,15 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
 
   const calculateMealMacros = (meal: Meal) => {
     if (!meal.products?.length || !trackContext?.products) {
-      return { calories: 0, protein: 0, carbs: 0, fats: 0 };
+      return { calories: 0, protein: 0, carbs: 0, fats: 0, quantity: 0 };
     }
 
     let calories = 0;
     let protein = 0;
     let carbs = 0;
     let fats = 0;
-
-    const productMap = new Map();
+    let quantity = 0;
+    const productMap = new Map<string, any>();
     trackContext.products.forEach(p => productMap.set(p.id, p));
 
     meal.products.forEach(mealProduct => {
@@ -58,10 +59,28 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
         protein += product.protein * factor;
         carbs += product.carbs * factor;
         fats += product.fats * factor;
+        quantity += mealProduct.quantity;
       }
     });
 
-    return { calories, protein, carbs, fats };
+    return { calories, protein, carbs, fats, quantity };
+  };
+
+  const getMacrosPer100g = (meal: Meal) => {
+    const macros = calculateMealMacros(meal);
+
+    if (!macros.quantity || macros.quantity === 0) {
+      return { calories: 0, protein: 0, carbs: 0, fats: 0 };
+    }
+
+    const factor = 100 / macros.quantity;
+
+    return {
+      calories: macros.calories * factor,
+      protein: macros.protein * factor,
+      carbs: macros.carbs * factor,
+      fats: macros.fats * factor,
+    };
   };
 
   const handleMealSelect = (meal: Meal) => {
@@ -76,7 +95,7 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
     }
 
     try {
-      await trackContext.addMealToTracking(selectedMeal, date);
+      await trackContext.addMealToTracking(selectedMeal, date, quantity);
 
       addNotification({
         type: 'SUCCESS',
@@ -104,15 +123,8 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
   };
 
-  // Calculate total calories for a meal
-  const getTotalCalories = (meal: Meal) => {
-    const macros = calculateMealMacros(meal);
-    return macros.calories;
-  };
-
   return (
     <>
-      {/* Main Modal - Meal Selection */}
       <CustomModal
         title="Select Meal"
         open={open}
@@ -148,8 +160,7 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
               >
                 <View style={styles.mealsGrid}>
                   {trackContext?.meals.map(meal => {
-                    const macros = calculateMealMacros(meal);
-                    const totalCalories = getTotalCalories(meal);
+                    const per100g = getMacrosPer100g(meal);
 
                     return (
                       <Pressable
@@ -182,35 +193,41 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
 
                             <View style={styles.mealStat}>
                               <Text style={styles.mealStatValue}>
-                                {totalCalories.toFixed(0)}
+                                {per100g.calories.toFixed(0)}
                               </Text>
-                              <Text style={styles.mealStatLabel}>Calories</Text>
+                              <Text style={styles.mealStatLabel}>
+                                Calories / 100g
+                              </Text>
                             </View>
                           </View>
 
-                          {/* Quick Macros Preview */}
                           <View style={styles.quickMacros}>
                             <View style={styles.quickMacro}>
                               <Text style={styles.quickMacroValue}>
-                                {macros.protein.toFixed(1)}
+                                {per100g.protein.toFixed(1)}
                               </Text>
-                              <Text style={styles.quickMacroLabel}>P</Text>
+                              <Text style={styles.quickMacroLabel}>
+                                P / 100g
+                              </Text>
                             </View>
                             <View style={styles.quickMacro}>
                               <Text style={styles.quickMacroValue}>
-                                {macros.carbs.toFixed(1)}
+                                {per100g.carbs.toFixed(1)}
                               </Text>
-                              <Text style={styles.quickMacroLabel}>C</Text>
+                              <Text style={styles.quickMacroLabel}>
+                                C / 100g
+                              </Text>
                             </View>
                             <View style={styles.quickMacro}>
                               <Text style={styles.quickMacroValue}>
-                                {macros.fats.toFixed(1)}
+                                {per100g.fats.toFixed(1)}
                               </Text>
-                              <Text style={styles.quickMacroLabel}>F</Text>
+                              <Text style={styles.quickMacroLabel}>
+                                F / 100g
+                              </Text>
                             </View>
                           </View>
 
-                          {/* Product Preview */}
                           {meal.products && meal.products.length > 0 && (
                             <View style={styles.productsPreview}>
                               {meal.products.slice(0, 2).map((product, idx) => {
@@ -245,7 +262,6 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
         </View>
       </CustomModal>
 
-      {/* Confirmation Modal */}
       {selectedMeal && (
         <CustomModal
           title="Confirm Meal Addition"
@@ -274,18 +290,8 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
                   {selectedMeal.products?.length || 0} products
                 </Text>
               </View>
-
-              <View style={styles.confirmationDetailRow}>
-                <Text style={styles.confirmationDetailLabel}>
-                  Total Calories:
-                </Text>
-                <Text style={styles.confirmationDetailValue}>
-                  {getTotalCalories(selectedMeal).toFixed(0)} kcal
-                </Text>
-              </View>
             </View>
 
-            {/* Products List */}
             {selectedMeal.products && selectedMeal.products.length > 0 && (
               <View style={styles.confirmationProducts}>
                 <Text style={styles.confirmationProductsTitle}>
@@ -313,6 +319,13 @@ export default function MealModal({ open, onClose, date }: MealModalProps) {
                 </ScrollView>
               </View>
             )}
+
+            <Input
+              placeholder="Quantity"
+              onChange={v => {
+                setQuantity(+v);
+              }}
+            />
 
             <View style={styles.confirmationActions}>
               <CustomButton
