@@ -50,3 +50,20 @@ adb logcat | grep -E "(StepCounter|AndroidRuntime|salubris)"
 # Save logs to a file
 
 adb logcat -d > android_logs.txt
+
+
+install java on linux
+
+sudo apt update
+sudo apt install openjdk-17-jdk
+
+readlink -f $(which java) gives the pah 
+
+nano ~/.bashrc
+
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
+
+echo $JAVA_HOME
+java -version
+
